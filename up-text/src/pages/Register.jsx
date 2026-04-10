@@ -1,106 +1,95 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function Register() {
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
+function Register() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Add backend API call to register the user
-    console.log("Registering user:", formData);
+
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Registration failed");
+        return;
+      }
+
+      // Save user info in localStorage
+      localStorage.setItem("user", JSON.stringify(data));
+
+      // Redirect to dashboard or login page
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong, please try again.");
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-gray-100">
-          Create Account
-        </h1>
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      <div className="bg-white p-8 rounded-xl shadow-lg w-96">
+        <h2 className="text-2xl font-bold text-center mb-6">
+          Register for ChatApp
+        </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 dark:text-gray-200 mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="Enter your username"
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input
+            type="text"
+            placeholder="Full Name"
+            className="border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
 
-          <div>
-            <label className="block text-gray-700 dark:text-gray-200 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
+          <input
+            type="email"
+            placeholder="Email"
+            className="border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-          <div>
-            <label className="block text-gray-700 dark:text-gray-200 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700 dark:text-gray-200 mb-1">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm your password"
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-            />
-          </div>
+          <input
+            type="password"
+            placeholder="Password"
+            className="border p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
           <button
             type="submit"
-            className="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg font-semibold transition-colors"
+            className="bg-blue-500 text-white p-3 rounded-md hover:bg-blue-600 transition"
           >
             Register
           </button>
         </form>
 
-        <p className="text-sm mt-4 text-gray-600 dark:text-gray-300 text-center">
+        <p className="text-sm text-center mt-4">
           Already have an account?{" "}
-          <a href="/login" className="text-purple-500 hover:underline">
+          <span
+            className="text-blue-500 cursor-pointer"
+            onClick={() => navigate("/login")}
+          >
             Login
-          </a>
+          </span>
         </p>
       </div>
     </div>
   );
 }
+
+export default Register;

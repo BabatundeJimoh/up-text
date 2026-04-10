@@ -1,171 +1,308 @@
 'use client'
+import React, { useState, useEffect } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 
-import React, { useState } from 'react'
-import {
-  HomeIcon,
-  ChatBubbleLeftRightIcon,
-  UserGroupIcon,
-  DocumentTextIcon,
-  Cog6ToothIcon,
-  Bars3Icon,
-  XMarkIcon,
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline'
+import SideBar from '../components/SideBar'
+import ChatList from '../components/ChatList'
+import ChatWindow from '../components/ChatWindow'
+import Settings from '../components/Settings'
+import AddContactModal from '../components/AddContactModal'
+import GroupModal from '../components/GroupModal'
 
+import io from 'socket.io-client'
+import axios from 'axios'
+
+const socket = io('http://localhost:5000')
 
 export default function Dashboard() {
-  const [open, setOpen] = useState(false)
+  const [selectedChat, setSelectedChat] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [newMessage, setNewMessage] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [groupName, setGroupName] = useState('')
+  const [selectedUsers, setSelectedUsers] = useState([])
+
+  const [user, setUser] = useState(null)
+  const [chats, setChats] = useState([])
+  const [users, setUsers] = useState([])
+
+  // Load user
+  useEffect(() => {
+    const loggedUser = JSON.parse(localStorage.getItem('user'))
+    if (loggedUser?._id) setUser(loggedUser)
+  }, [])
+
+  // Fetch users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/auth/users')
+        if (user?._id) {
+          setUsers(res.data.filter(u => u._id !== user._id))
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    if (user?._id) fetchUsers()
+  }, [user])
+
+  // Fetch chats
+  useEffect(() => {
+    if (!user?._id) return
+
+    const fetchChats = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/chats/${user._id}`)
+
+        const uniqueChats = Array.from(
+          new Map(res.data.map(c => [c._id, c])).values()
+        )
+
+        const formatted = uniqueChats.map(chat => {
+          let chatName = chat.name
+
+          if (!chat.isGroup) {
+            const otherUser = chat.members.find(m => m._id !== user._id)
+            chatName = otherUser?.name || "Unknown"
+          }
+
+          return { ...chat, id: chat._id, name: chatName }
+        })
+
+        setChats(formatted)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    fetchChats()
+  }, [user])
+
+  // Join chat rooms
+  useEffect(() => {
+    chats.forEach(chat => {
+      if (chat?.id) socket.emit('join_chat', chat.id)
+    })
+  }, [chats])
+
+  // Fetch messages
+  useEffect(() => {
+    if (!selectedChat) return
+
+    const fetchMessages = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/messages/${selectedChat.id}`
+        )
+        setMessages(res.data)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    fetchMessages()
+  }, [selectedChat])
+
+  // ===============================
+  // 🔥 SOCKET MESSAGE LISTENER
+  // ===============================
+  useEffect(() => {
+    const handleReceive = (data) => {
+      setMessages(prev => [...prev, data])
+
+      const isMyMessage = data.sender === user?._id
+      const isCurrentChat = data.chatId === selectedChat?.id
+
+      // ONLY notify if:
+      // - NOT my message
+      // - NOT currently open chat
+      if (!isMyMessage && !isCurrentChat) {
+
+        // SOUND
+        const audio = new Audio('/notification.mp3')
+        audio.volume = 0.7
+        audio.play().catch(err => console.log('Audio blocked:', err))
+
+        // TOAST
+        toast(`${data.senderName || 'New Message'}: ${data.text}`, {
+          style: {
+            background: '#7B61FF',
+            color: '#fff',
+          },
+        })
+      }
+    }
+
+    socket.on('receive_message', handleReceive)
+
+    return () => socket.off('receive_message', handleReceive)
+  }, [selectedChat, user])
+
+  // ===============================
+  // SEND MESSAGE
+  // ===============================
+  const handleSendMessage = () => {
+    if (!newMessage || !selectedChat) return
+
+    const messageData = {
+      chatId: selectedChat.id,
+      sender: user._id,
+      senderName: user.name,
+      text: newMessage,
+    }
+
+    socket.emit('send_message', messageData)
+
+    setMessages(prev => [...prev, messageData])
+
+    setNewMessage('')
+  }
+
+  // Start chat
+  const handleStartChat = async (contact) => {
+    if (!user?._id || !contact?._id) return
+
+    try {
+      const existing = chats.find(
+        c => !c.isGroup && c.members?.some(m => m._id === contact._id)
+      )
+
+      if (existing) {
+        setSelectedChat(existing)
+      } else {
+        const res = await axios.post(
+          'http://localhost:5000/api/chats',
+          {
+            senderId: user._id,
+            receiverId: contact._id,
+          }
+        )
+
+        const newChat = {
+          ...res.data,
+          id: res.data._id,
+          name: contact.name,
+        }
+
+        setChats(prev => [newChat, ...prev])
+        setSelectedChat(newChat)
+      }
+
+      setShowModal(false)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  // Create group
+  const createGroup = async (name, selectedUsersList) => {
+    try {
+      const memberIds = selectedUsersList.map(u => u._id)
+      memberIds.push(user._id)
+
+      const res = await axios.post(
+        'http://localhost:5000/api/chats/group',
+        {
+          name,
+          members: memberIds,
+        }
+      )
+
+      const newGroup = {
+        ...res.data,
+        id: res.data._id,
+        name,
+      }
+
+      setChats(prev => [newGroup, ...prev])
+      setSelectedChat(newGroup)
+      setGroupName('')
+      setSelectedUsers([])
+      setShowGroupModal(false)
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   return (
-    <div className="flex h-screen   bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF] text-white overflow-hidden">
+    <div className="flex h-screen bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF] text-white overflow-hidden">
 
-      {/* MOBILE MENU BUTTON */}
-      <button
-        onClick={() => setOpen(true)}
-        className="absolute top-4 left-4 z-50 md:hidden"
-      >
-        <Bars3Icon className="w-6 h-6" />
-      </button>
+      <SideBar
+        user={user}
+        setShowModal={setShowModal}
+        setShowGroupModal={setShowGroupModal}
+      />
 
-      {/* LEFT SIDEBAR */}
-<aside
-  className={`fixed md:static z-40 h-full w-60 
-  bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]
-  flex flex-col transform ${
-    open ? "translate-x-0" : "-translate-x-full"
-  } md:translate-x-0 transition-transform duration-300`}
->
-        {/* CLOSE BUTTON (MOBILE) */}
-        <button
-          onClick={() => setOpen(false)}
-          className="md:hidden mb-4 self-end"
-        >
-          <XMarkIcon className="w-6 h-6" />
-        </button>
+      <main className="flex-1 flex">
+        <Routes>
 
-        <div className="flex justify-center py-5" >
-          <img
-            className="rounded-full w-20 h-20"
-            src="https://images.unsplash.com/photo-1554151228-14d9def656e4"
+          <Route
+            path="chats"
+            element={
+              <>
+                <ChatList
+                  chats={chats}
+                  setSelectedChat={setSelectedChat}
+                  user={user}
+                />
+
+                <ChatWindow
+                  selectedChat={selectedChat}
+                  messages={messages.filter(
+                    m => m.chatId === selectedChat?.id
+                  )}
+                  newMessage={newMessage}
+                  setNewMessage={setNewMessage}
+                  handleSendMessage={handleSendMessage}
+                  user={user}
+                />
+              </>
+            }
           />
-        </div>
-        <p className="text-center ">Lewis Cole</p>
 
-        <ul className="space-y-4 flex-1 overflow-y-auto py-6">
-          <li className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded">
-            <HomeIcon className="w-5 h-5" />
-            Properties
-          </li>
-          <li className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded">
-            <ChatBubbleLeftRightIcon className="w-5 h-5" />
-            Chats
-          </li>
-          <li className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded">
-            <UserGroupIcon className="w-5 h-5" />
-            Groups
-          </li>
-          <li className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded">
-            <DocumentTextIcon className="w-5 h-5" />
-            Documents
-          </li>
-          <li className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded">
-            <Cog6ToothIcon className="w-5 h-5" />
-            Settings
-          </li>
-        </ul>
+          <Route
+            path="groups"
+            element={<div className="p-6 text-black">Groups Page</div>}
+          />
 
-     <button className="mt-auto bg-purple-500 mb-5 px-3 py-2 rounded w-55 self-center hover:bg-purple-400 transition">
-          + Add Group
-        </button>
-      </aside>
+          <Route
+            path="settings"
+            element={<Settings user={user} />}
+          />
 
-      {/* MIDDLE PANEL */}
-      <section className="hidden md:block w-80 bg-[#F5F7FB] p-4 border-l  md:rounded-l-[40px]">
-     <div className="mb-4">
-  <h2 className="text-lg font-bold mb-3 text-black">Chats</h2>
+          <Route
+            path="*"
+            element={<Navigate to="chats" replace />}
+          />
 
-  <div className="relative ">
-    <input
-      type="text"
-      placeholder="Search chats..."
-      className="w-full px-3 py-2 pr-10 rounded-lg bg-[#FFFFFF] text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-    />
-
-    <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
-  </div>
-</div>
-
-      <div className="space-y-3 overflow-y-auto">
-
-  <div className="flex items-center gap-3 p-3 bg-[#FFFFFF] rounded cursor-pointer hover:bg-gray-600">
-    <img
-      src="https://randomuser.me/api/portraits/men/1.jpg"
-      className="w-10 h-10 rounded-full object-cover"
-      alt="user"
-    />
-    <div>
-      <p className="font-semibold text-[#7B61FF]">John Doe</p>
-      <p className="text-sm text-gray-400">Hey, how are you?</p>
-    </div>
-  </div>
-
-  <div className="flex items-center gap-3 p-3 bg-[#FFFFFF] rounded cursor-pointer hover:bg-gray-600">
-    <img
-      src="https://randomuser.me/api/portraits/women/2.jpg"
-      className="w-10 h-10 rounded-full object-cover"
-      alt="group"
-    />
-    <div>
-      <p className="font-semibold text-[#7B61FF]">Study Group</p>
-      <p className="text-sm text-gray-400">Assignment due tomorrow</p>
-    </div>
-  </div>
-
-</div>
-      </section>
-
-      {/* RIGHT PANEL */}
-      <main className="flex-1 flex flex-col p-4 md:p-6 bg-[#F5F7FB] ">
-     <header className="bg-[#FFFFFF] p-4 mb-4 rounded-lg flex items-center gap-3">
-  <img
-    src="https://images.unsplash.com/photo-1554151228-14d9def656e4"
-    alt="User Avatar"
-    className="w-12 h-12 rounded-full"
-  />
-
-  <div className="flex flex-col">
-    <span className="font-semibold text-[#7B61FF] text-lg md:text-xl">
-      Lewis Cole
-    </span>
-    <span className="text-sm text-green-500">Online</span>
-  </div>
-</header>
-
-       <div className="flex-1 flex flex-col gap-4 overflow-y-auto  bg-[#FFFFFF]  rounded-lg p-4">
-  {/* Messages */}
-  <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
-    <div className="self-start bg-[#e1e4eb] p-3 rounded-lg max-w-xs">
-       <p className='text-[#1E1E2F]'>Hello! Welcome to the group.</p>
-    </div>
-
-    <div className="self-end bg-purple-600 p-3 rounded-lg max-w-xs">
-      <p>Hi there! Excited to chat!</p>
-    </div>
-  </div>
-
-  {/* Input */}
-  <div className="flex gap-2 mt-4">
-    <input
-      type="text"
-      placeholder="Type your message..."
-      className="flex-1 px-3 py-2 rounded bg-[#F5F7FB] text-[#1E1E2F] text-sm md:text-base focus:outline-none"
-    />
-    <button className="bg-purple-500 px-3 md:px-4 py-2 rounded hover:bg-purple-400">
-      Send
-    </button>
-  </div>
-</div>
+        </Routes>
       </main>
+
+      {showModal && (
+        <AddContactModal
+          users={users}
+          search={''}
+          setSearch={() => {}}
+          startChat={handleStartChat}
+          closeModal={() => setShowModal(false)}
+        />
+      )}
+
+      {showGroupModal && (
+        <GroupModal
+          users={users}
+          groupName={groupName}
+          setGroupName={setGroupName}
+          selectedUsers={selectedUsers}
+          setSelectedUsers={setSelectedUsers}
+          closeModal={() => setShowGroupModal(false)}
+          createGroup={createGroup}
+        />
+      )}
     </div>
   )
 }
