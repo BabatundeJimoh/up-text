@@ -12,23 +12,37 @@ export default function ChatList({ chats, setSelectedChat, user }) {
       chat.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  // ================= AVATAR =================
   const getAvatar = (chat) => {
     if (chat.isGroup) return '/group.png'
 
-    const otherUser = chat.members.find(
-      (member) => member._id !== user._id
+    const otherUser = chat.members?.find(
+      (member) => member._id !== user?._id
     )
 
-    const seed = otherUser?._id || 'default'
+    if (otherUser?.profilePic) return otherUser.profilePic
 
-    return `https://avatars.dicebear.com/api/avataaars/${seed}.svg`
+    const seed = otherUser?._id || otherUser?.name || 'default'
+
+    return `https://api.dicebear.com/7.x/personas/svg?seed=${seed}`
+  }
+
+  // ================= FORMAT TIME =================
+  const formatTime = (date) => {
+    if (!date) return ''
+
+    return new Date(date).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   return (
-    <section className="hidden md:block w-80 bg-[#F5F7FB] p-4 border-l md:rounded-l-[40px] text-black">
-      <h2 className="text-lg font-bold mb-3">Chats</h2>
+    <section className="hidden md:block w-96 bg-[#F5F7FB] p-4 border-l md:rounded-l-[40px] text-black  ">
 
-      {/* Search */}
+      <h2 className="text-lg font-bold mb-3 ml-4">Chats</h2>
+
+      {/* SEARCH */}
       <div className="relative mb-4">
         <input
           type="text"
@@ -41,21 +55,37 @@ export default function ChatList({ chats, setSelectedChat, user }) {
         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
       </div>
 
-      {/* Chat List */}
+      {/* CHAT LIST */}
       <div className="space-y-3 overflow-y-auto">
+
+        {filteredChats.length === 0 && (
+          <p className="text-gray-400 text-sm text-center mt-10">
+            No chats found
+          </p>
+        )}
+
         {filteredChats.map((chat) => (
           <div
             key={chat._id}
-            className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-100 transition"
             onClick={() => setSelectedChat(chat)}
+            className="flex items-start gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-100 transition relative"
           >
+
+            {/* TIME (TOP RIGHT) */}
+            <span className="absolute top-2 right-3 text-[11px] text-gray-400">
+              {formatTime(chat.updatedAt)}
+            </span>
+
+            {/* AVATAR */}
             <img
               src={getAvatar(chat)}
               className="w-10 h-10 rounded-full object-cover"
               alt="Avatar"
             />
 
+            {/* CHAT INFO */}
             <div className="flex-1 overflow-hidden">
+
               <p className="font-semibold text-[#7B61FF]">
                 {chat.name}
               </p>
@@ -63,9 +93,11 @@ export default function ChatList({ chats, setSelectedChat, user }) {
               <p className="text-sm text-gray-400 truncate">
                 {chat.lastMessage || 'No messages yet'}
               </p>
+
             </div>
           </div>
         ))}
+
       </div>
     </section>
   )

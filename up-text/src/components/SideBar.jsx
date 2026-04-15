@@ -1,75 +1,117 @@
 'use client'
+
 import React from 'react'
 import {
   ChatBubbleLeftRightIcon,
   UserGroupIcon,
-  DocumentTextIcon,
   Cog6ToothIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { NavLink } from 'react-router-dom'
-import Settings from './Settings' // make sure this path is correct
 
-export default function SideBar({ setShowModal, setShowGroupModal, user }) {
+export default function SideBar({
+  setShowModal,
+  setShowGroupModal,
+  user,
+  showSidebar,
+  setShowSidebar
+}) {
+
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 p-2 rounded hover:bg-gray-700 ${
       isActive ? 'text-yellow-400' : 'text-white'
     }`
 
   return (
-    <aside className="fixed md:static z-40 h-full w-60 bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF] flex flex-col p-4">
-      
-      <div className="flex justify-center py-5">
-        <img
-          className="rounded-full w-20 h-20 object-cover"
-          src="https://images.unsplash.com/photo-1554151228-14d9def656e4"
-          alt="Profile"
+    <>
+      {/* BACKDROP (mobile only) */}
+      {showSidebar && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setShowSidebar(false)}
         />
-      </div>
+      )}
 
-      <p className="text-center mb-5 font-semibold text-white">
-        {user?.name || 'Guest User'}
-      </p>
+      {/* SIDEBAR */}
+      <aside
+        className={`
+          fixed md:static z-50 h-full w-72 md:w-60
+          bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]
+          flex flex-col p-4
+          transition-transform duration-300
+          md:translate-x-0
+          ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
 
-      <ul className="space-y-4 flex-1 overflow-y-auto">
+        {/* CLOSE BUTTON (mobile only) */}
+        <div className="md:hidden flex justify-end">
+          <button onClick={() => setShowSidebar(false)}>
+            <XMarkIcon className="w-6 h-6 text-white" />
+          </button>
+        </div>
 
-        <li>
-          <NavLink to="/dashboard/chats" className={linkClass}>
-            <ChatBubbleLeftRightIcon className="w-5 h-5" />
-            Chats
-          </NavLink>
-        </li>
+        {/* PROFILE */}
+        <div className="flex justify-center py-5">
+          <img
+            className="rounded-full w-20 h-20 object-cover"
+            src={user?.profilePic || "https://i.pravatar.cc/150?img=3"}
+            alt="Profile"
+          />
+        </div>
 
-        <li
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
-        >
-          <UserGroupIcon className="w-5 h-5" />
-          Add Contact
-        </li>
+        <p className="text-center mb-5 font-semibold text-white">
+          {user?.name || 'Guest User'}
+        </p>
 
-        <li
-          className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
-          onClick={() => setShowGroupModal(true)}
-        >
-          <UserGroupIcon className="w-5 h-5" />
-          Groups
-        </li>
+        <ul className="space-y-4 flex-1 overflow-y-auto">
 
-        {/* <li>
-          <NavLink to="/dashboard/documents" className={linkClass}>
-            <DocumentTextIcon className="w-5 h-5" />
-            Documents
-          </NavLink>
-        </li> */}
+          <li>
+            <NavLink
+              to="/dashboard/chats"
+              className={linkClass}
+              onClick={() => setShowSidebar(false)}
+            >
+              <ChatBubbleLeftRightIcon className="w-5 h-5" />
+              Chats
+            </NavLink>
+          </li>
 
-        <li>
-          <NavLink to="/dashboard/settings" className={linkClass}>
-            <Cog6ToothIcon className="w-5 h-5" />
-            Settings
-          </NavLink>
-        </li>
+          <li
+            onClick={() => {
+              setShowModal(true)
+              setShowSidebar(false)
+            }}
+            className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
+          >
+            <UserGroupIcon className="w-5 h-5" />
+            Add Contact
+          </li>
 
-      </ul>
-    </aside>
+          <li
+            onClick={() => {
+              setShowGroupModal(true)
+              setShowSidebar(false)
+            }}
+            className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
+          >
+            <UserGroupIcon className="w-5 h-5" />
+            Create Group
+          </li>
+
+          <li>
+            <NavLink
+              to="/dashboard/settings"
+              className={linkClass}
+              onClick={() => setShowSidebar(false)}
+            >
+              <Cog6ToothIcon className="w-5 h-5" />
+              Settings
+            </NavLink>
+          </li>
+
+        </ul>
+      </aside>
+    </>
   )
 }

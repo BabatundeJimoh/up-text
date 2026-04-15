@@ -16,8 +16,11 @@ export default function GroupModal({
     user.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  // ✅ FIXED TOGGLE LOGIC
   const toggleUser = (user) => {
-    if (selectedUsers.includes(user)) {
+    const exists = selectedUsers.some(u => u._id === user._id)
+
+    if (exists) {
       setSelectedUsers(selectedUsers.filter(u => u._id !== user._id))
     } else {
       setSelectedUsers([...selectedUsers, user])
@@ -27,8 +30,10 @@ export default function GroupModal({
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
       <div className="bg-white w-96 p-5 rounded-xl shadow-lg text-black">
+
         <h2 className="text-lg font-bold mb-3">Create Group</h2>
 
+        {/* GROUP NAME */}
         <input
           type="text"
           placeholder="Group Name"
@@ -37,6 +42,7 @@ export default function GroupModal({
           onChange={(e) => setGroupName(e.target.value)}
         />
 
+        {/* SEARCH USERS */}
         <input
           type="text"
           placeholder="Search users..."
@@ -45,12 +51,14 @@ export default function GroupModal({
           onChange={(e) => setSearch(e.target.value)}
         />
 
+        {/* USER LIST */}
         <div className="max-h-60 overflow-y-auto mb-3">
+
           {filteredUsers.map((user) => (
             <div
               key={user._id}
               className={`p-2 cursor-pointer rounded ${
-                selectedUsers.find(u => u._id === user._id)
+                selectedUsers.some(u => u._id === user._id)
                   ? 'bg-purple-200'
                   : 'hover:bg-gray-200'
               }`}
@@ -59,22 +67,28 @@ export default function GroupModal({
               {user.name}
             </div>
           ))}
+
         </div>
 
+        {/* ACTIONS */}
         <div className="flex justify-end gap-2">
+
           <button
             className="px-3 py-1 rounded bg-gray-300 hover:bg-gray-400"
             onClick={closeModal}
           >
             Cancel
           </button>
+
           <button
             className="px-3 py-1 rounded bg-purple-500 hover:bg-purple-400 text-white"
             onClick={() => createGroup(groupName, selectedUsers)}
           >
             Create
           </button>
+
         </div>
+
       </div>
     </div>
   )

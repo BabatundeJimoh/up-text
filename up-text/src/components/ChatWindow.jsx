@@ -8,32 +8,46 @@ export default function ChatWindow({
   newMessage,
   setNewMessage,
   handleSendMessage,
-  user
+  user,
+  setShowSidebar
 }) {
   return (
-    <section className="flex-1 flex flex-col justify-between bg-[#F5F7FB] text-black p-4">
+    <section className="flex-1 max-w-3xl mx-auto flex flex-col justify-between bg-[#F5F7FB] text-black p-4">
 
       {/* HEADER */}
       <div className="flex items-center gap-3 mb-4 p-3 rounded-lg w-full bg-white">
 
-        <div className="relative">
-          <img
-            src="https://i.pravatar.cc/150?img=3"
-            alt="User"
-            className="w-12 h-12 rounded-full object-cover"
-          />
+        {/* LEFT SIDE: PROFILE + NAME */}
+        <div className="flex items-center gap-3">
 
-          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+          <div className="relative">
+            <img
+              src="https://i.pravatar.cc/150?img=3"
+              alt="User"
+              className="w-12 h-12 rounded-full object-cover"
+            />
+
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+          </div>
+
+          <p className="font-semibold text-[#7B61FF]">
+            {selectedChat?.name || 'User'}
+          </p>
         </div>
 
-        <p className="font-semibold text-[#7B61FF]">
-          {selectedChat?.name || 'User'}
-        </p>
-      </div>
+        {/* RIGHT SIDE: MOBILE MENU */}
+        <button
+          className="md:hidden ml-auto text-2xl"
+          onClick={() => setShowSidebar(true)}
+        >
+          ☰
+        </button>
 
+      </div>
 
       {/* MESSAGES */}
       <div className="overflow-y-auto mb-4 flex-1 bg-white p-3 rounded-lg">
+
         {messages.map((msg, idx) => {
           const isSender = msg.sender === user._id
 
@@ -44,7 +58,7 @@ export default function ChatWindow({
                 isSender ? 'items-end' : 'items-start'
               }`}
             >
-              {/* Message Bubble */}
+
               <div
                 className={`px-4 py-2 rounded-lg max-w-[70%] ${
                   isSender
@@ -55,7 +69,6 @@ export default function ChatWindow({
                 {msg.text}
               </div>
 
-              {/* Time */}
               <span className="text-xs text-gray-400 mt-1 px-1">
                 {msg.createdAt
                   ? new Date(msg.createdAt).toLocaleTimeString([], {
@@ -64,14 +77,16 @@ export default function ChatWindow({
                     })
                   : 'Just now'}
               </span>
+
             </div>
           )
         })}
-      </div>
 
+      </div>
 
       {/* INPUT */}
       <div className="flex gap-2">
+
         <input
           type="text"
           placeholder="Type a message..."
@@ -87,6 +102,7 @@ export default function ChatWindow({
         >
           Send
         </button>
+
       </div>
 
     </section>
