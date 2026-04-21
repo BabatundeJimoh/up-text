@@ -22,13 +22,20 @@ export default function SideBar({
       isActive ? 'text-yellow-400' : 'text-white'
     }`
 
+  // ✅ SAFE FUNCTION (prevents crash)
+  const closeSidebar = () => {
+    if (typeof setShowSidebar === 'function') {
+      setShowSidebar(false)
+    }
+  }
+
   return (
     <>
       {/* BACKDROP (mobile only) */}
       {showSidebar && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setShowSidebar(false)}
+          onClick={closeSidebar}
         />
       )}
 
@@ -46,7 +53,7 @@ export default function SideBar({
 
         {/* CLOSE BUTTON (mobile only) */}
         <div className="md:hidden flex justify-end">
-          <button onClick={() => setShowSidebar(false)}>
+          <button onClick={closeSidebar}>
             <XMarkIcon className="w-6 h-6 text-white" />
           </button>
         </div>
@@ -60,53 +67,53 @@ export default function SideBar({
           />
         </div>
 
-        <p className="text-center mb-5 font-semibold text-white">
+        <p className="text-center mb-7 font-semibold text-white ">
           {user?.name || 'Guest User'}
         </p>
 
-        <ul className="space-y-4 flex-1 overflow-y-auto">
+        <ul className="space-y-7 flex-1 overflow-y-auto">
 
           <li>
             <NavLink
               to="/dashboard/chats"
               className={linkClass}
-              onClick={() => setShowSidebar(false)}
+              onClick={closeSidebar}
             >
-              <ChatBubbleLeftRightIcon className="w-5 h-5" />
-              Chats
+              <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
+              <p className="text-white">Chats</p>
             </NavLink>
           </li>
 
           <li
             onClick={() => {
-              setShowModal(true)
-              setShowSidebar(false)
+              setShowModal?.(true)   // ✅ SAFE CALL
+              closeSidebar()
             }}
             className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
           >
-            <UserGroupIcon className="w-5 h-5" />
-            Add Contact
+            <UserGroupIcon className="w-5 h-5 text-white" />
+            <p className="text-white">Add Contact</p>
           </li>
 
           <li
             onClick={() => {
-              setShowGroupModal(true)
-              setShowSidebar(false)
+              setShowGroupModal?.(true)  // ✅ SAFE CALL
+              closeSidebar()
             }}
             className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
           >
-            <UserGroupIcon className="w-5 h-5" />
-            Create Group
+            <UserGroupIcon className="w-5 h-5 text-white  " />
+            <p className="text-white">Create Group</p>
           </li>
 
           <li>
             <NavLink
               to="/dashboard/settings"
               className={linkClass}
-              onClick={() => setShowSidebar(false)}
+              onClick={closeSidebar}
             >
-              <Cog6ToothIcon className="w-5 h-5" />
-              Settings
+              <Cog6ToothIcon className="w-5 h-5 text-white" />
+              <p className="text-white">Settings</p>
             </NavLink>
           </li>
 

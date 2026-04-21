@@ -1,171 +1,177 @@
 'use client'
-import React, { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+
+import React, { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
 import io from 'socket.io-client'
 import axios from 'axios'
-
+import { Routes, Route, Navigate } from 'react-router-dom'
 import SideBar from '../components/SideBar'
 import ChatList from '../components/ChatList'
 import ChatWindow from '../components/ChatWindow'
-import Settings from '../components/Settings'
 import AddContactModal from '../components/AddContactModal'
 import GroupModal from '../components/GroupModal'
+import Settings from '../components/Settings'
 
 const socket = io('http://localhost:5000')
 
+const sortChats = (list) =>
+  [...list].sort(
+    (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)
+  )
+
 export default function Dashboard() {
-  const [selectedChat, setSelectedChat] = useState(null)
+  const [user, setUser] = useState(null)
+  const [chats, setChats] = useState([])
   const [messages, setMessages] = useState([])
-  const [newMessage, setNewMessage] = useState('')
-const [showSidebar, setShowSidebar] = useState(false)
+  const [selectedChat, setSelectedChat] = useState(null)
+
+  const [users, setUsers] = useState([])
+  const [search, setSearch] = useState('')
+
   const [showModal, setShowModal] = useState(false)
   const [showGroupModal, setShowGroupModal] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
 
   const [groupName, setGroupName] = useState('')
   const [selectedUsers, setSelectedUsers] = useState([])
-
-  const [user, setUser] = useState(null)
-  const [chats, setChats] = useState([])
-  const [users, setUsers] = useState([])
+const [mobileView, setMobileView] = useState("list") 
+  const [newMessage, setNewMessage] = useState('')
+  const socketInit = useRef(false)
 
   // ================= LOAD USER =================
   useEffect(() => {
-    const loggedUser = JSON.parse(localStorage.getItem('user'))
-    if (loggedUser?._id) setUser(loggedUser)
+    const stored = localStorage.getItem('user')
+    if (!stored) return
+
+    const parsed = JSON.parse(stored)
+    if (parsed?._id) setUser(parsed)
   }, [])
 
-  // ================= FETCH USERS =================
+  // ================= LOAD USERS =================
   useEffect(() => {
     if (!user?._id) return
 
-    const fetchUsers = async () => {
-      try {
-        const res = await axios.get('http://localhost:5000/api/auth/users')
+    axios.get('http://localhost:5000/api/auth/users')
+      .then(res => {
         setUsers(res.data.filter(u => u._id !== user._id))
-      } catch (err) {
-        console.error(err)
-      }
-    }
-
-    fetchUsers()
+      })
+      .catch(console.error)
   }, [user])
 
-  // ================= FETCH CHATS =================
+  // ================= LOAD CHATS =================
   useEffect(() => {
     if (!user?._id) return
 
-    const fetchChats = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/chats/${user._id}`
-        )
-
+    axios.get(`http://localhost:5000/api/chats/${user._id}`)
+      .then(res => {
         const formatted = res.data.map(chat => {
-          let chatName = chat.name
-
-          if (!chat.isGroup) {
-            const otherUser = chat.members.find(
-              m => m._id !== user._id
-            )
-            chatName = otherUser?.name || 'Unknown'
-          }
+          const other = chat.members?.find(m => m._id !== user._id)
 
           return {
             ...chat,
             id: chat._id,
-            name: chatName,
-            lastMessage: chat.lastMessage || ''
+            name: chat.isGroup ? chat.name : other?.name || 'User',
+            lastMessage: chat.lastMessage || '',
+            updatedAt: chat.updatedAt || new Date()
           }
         })
 
-        setChats(formatted)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-
-    fetchChats()
+        setChats(sortChats(formatted))
+      })
   }, [user])
 
-  // ================= JOIN CHAT ROOMS =================
+  // ================= JOIN ROOMS =================
   useEffect(() => {
     chats.forEach(chat => {
       if (chat?.id) socket.emit('join_chat', chat.id)
     })
   }, [chats])
 
-  // ================= FETCH MESSAGES =================
+  // ================= LOAD MESSAGES =================
   useEffect(() => {
-    if (!selectedChat) return
+    if (!selectedChat?.id) return
 
-    const fetchMessages = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/messages/${selectedChat.id}`
-        )
-        setMessages(res.data)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-
-    fetchMessages()
+    axios.get(`http://localhost:5000/api/messages/${selectedChat.id}`)
+      .then(res => setMessages(res.data))
   }, [selectedChat])
 
-  // ================= SOCKET RECEIVE =================
+ 
+//SOCKET RECEIVE + SEEN
   useEffect(() => {
-    const handleReceive = (data) => {
-      setMessages(prev => [...prev, data])
+  if (socketInit.current) return
+  socketInit.current = true
 
-      // ✅ UPDATE LAST MESSAGE IN CHATLIST
-      setChats(prev =>
-        prev.map(chat =>
-          chat.id === data.chatId
-            ? { ...chat, lastMessage: data.text }
-            : chat
-        )
-      )
+  // ================= RECEIVE MESSAGE =================
+  socket.on('receive_message', (msg) => {
+    setMessages(prev => [...prev, msg])
 
-      const isMyMessage = data.sender === user?._id
-      const isCurrentChat = data.chatId === selectedChat?.id
+    const senderId =
+      typeof msg.sender === 'object'
+        ? msg.sender._id
+        : msg.sender
 
-      if (!isMyMessage && !isCurrentChat) {
-        const audio = new Audio('/notification.mp3')
-        audio.volume = 0.7
-        audio.play().catch(() => {})
+    setChats(prev => {
+      const updated = prev.map(chat => {
+        if (chat.id === msg.chatId) {
+          return {
+            ...chat,
+            lastMessage: msg.text,
+            updatedAt: new Date(),
 
-        toast(`${data.sender?.name || 'New Message'}: ${data.text}`, {
-          style: {
-            background: '#7B61FF',
-            color: '#fff',
-          },
-        })
-      }
+            // ❌ DO NOT increment here
+            // backend handles unreadCount now
+          }
+        }
+        return chat
+      })
+
+      return sortChats(updated)
+    })
+
+    // toast only for other user messages
+    if (senderId !== user?._id) {
+      toast(`${msg.sender?.name || 'New'}: ${msg.text}`)
     }
+  })
 
-    socket.on('receive_message', handleReceive)
-    return () => socket.off('receive_message', handleReceive)
-  }, [selectedChat, user])
-
-  // ================= SEND MESSAGE =================
-  const handleSendMessage = () => {
-    if (!newMessage || !selectedChat) return
-
-    const messageData = {
-      chatId: selectedChat.id,
-      sender: user._id,
-      text: newMessage,
-    }
-
-    socket.emit('send_message', messageData)
-
-    // ✅ UPDATE LAST MESSAGE IN CHATLIST (SENDER SIDE)
+  // ================= SEE MESSAGES =================
+  socket.on("messages_seen", ({ chatId }) => {
     setChats(prev =>
       prev.map(chat =>
-        chat.id === selectedChat.id
-          ? { ...chat, lastMessage: newMessage }
+        chat.id === chatId
+          ? { ...chat, unreadCount: 0 }
           : chat
+      )
+    )
+  })
+
+}, [user])
+
+  // ================= SEND =================
+  const handleSendMessage = () => {
+    if (!newMessage.trim() || !selectedChat?.id || !user?._id) return
+
+    const msg = {
+      chatId: selectedChat.id,
+      sender: user._id,
+      text: newMessage
+    }
+
+    socket.emit('send_message', msg)
+
+    // 🔥 INSTANT UI UPDATE
+    setMessages(prev => [
+      ...prev,
+      { ...msg, createdAt: new Date(), seen: false }
+    ])
+
+    setChats(prev =>
+      sortChats(
+        prev.map(chat =>
+          chat.id === selectedChat.id
+            ? { ...chat, lastMessage: newMessage, updatedAt: new Date() }
+            : chat
+        )
       )
     )
 
@@ -174,146 +180,148 @@ const [showSidebar, setShowSidebar] = useState(false)
 
   // ================= START CHAT =================
   const handleStartChat = async (contact) => {
-    if (!user?._id || !contact?._id) return
+    if (!contact?._id || !user?._id) return
 
-    try {
-      const existing = chats.find(
-        c => !c.isGroup && c.members?.some(m => m._id === contact._id)
-      )
+    const existing = chats.find(
+      c => !c.isGroup && c.members?.some(m => m._id === contact._id)
+    )
 
-      if (existing) {
-        setSelectedChat(existing)
-      } else {
-        const res = await axios.post(
-          'http://localhost:5000/api/chats',
-          {
-            senderId: user._id,
-            receiverId: contact._id,
-          }
-        )
-
-        const newChat = {
-          ...res.data,
-          id: res.data._id,
-          name: contact.name,
-          lastMessage: ''
-        }
-
-        setChats(prev => [newChat, ...prev])
-        setSelectedChat(newChat)
-      }
-
+    if (existing) {
+      setSelectedChat(existing)
       setShowModal(false)
-    } catch (err) {
-      console.error(err)
+      return
     }
+
+    const res = await axios.post('http://localhost:5000/api/chats', {
+      senderId: user._id,
+      receiverId: contact._id
+    })
+
+    const newChat = {
+      ...res.data,
+      id: res.data._id,
+      name: contact.name,
+      lastMessage: '',
+      updatedAt: new Date()
+    }
+
+    setChats(prev => sortChats([newChat, ...prev]))
+    setSelectedChat(newChat)
+    setShowModal(false)
   }
+
+  
 
   // ================= CREATE GROUP =================
-  const createGroup = async (name, selectedUsersList) => {
-    try {
-      if (!name.trim()) return alert('Group name required')
-      if (!selectedUsersList?.length) return alert('Select users')
+  const createGroup = async (name, list) => {
+    if (!name || !list.length) return
 
-      const memberIds = selectedUsersList.map(u => u._id)
-      memberIds.push(user._id)
+    const res = await axios.post('http://localhost:5000/api/chats/group', {
+      name,
+      members: [user._id, ...list.map(u => u._id)]
+    })
 
-      const res = await axios.post(
-        'http://localhost:5000/api/chats/group',
-        { name, members: memberIds }
-      )
-
-      const newGroup = {
-        ...res.data,
-        id: res.data._id,
-        lastMessage: ''
-      }
-
-      setChats(prev => [newGroup, ...prev])
-      setSelectedChat(newGroup)
-
-      setGroupName('')
-      setSelectedUsers([])
-      setShowGroupModal(false)
-    } catch (err) {
-      console.error(err)
-      alert('Group creation failed')
+    const group = {
+      ...res.data,
+      id: res.data._id,
+      lastMessage: '',
+      updatedAt: new Date(),
+      isGroup: true
     }
+
+    setChats(prev => sortChats([group, ...prev]))
+    setSelectedChat(group)
+    setShowGroupModal(false)
   }
 
+  if (!user) return <div className="p-5">Loading...</div>
+
   return (
-    <div className="flex h-screen bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF] text-white overflow-hidden">
+   <div className="flex h-screen  bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]">
 
-    
-<SideBar
+    <SideBar
+      user={user}
+      setShowModal={setShowModal}
+      setShowGroupModal={setShowGroupModal}
+      showSidebar={showSidebar}
+      setShowSidebar={setShowSidebar}
+    />
+
+    <main className="flex flex-1">
+
+      <Routes>
+
+        {/* ================= CHATS ================= */}
+        <Route
+          path="chats"
+          element={
+            <>
+<ChatList
+  chats={chats}
   user={user}
-  setShowModal={setShowModal}
-  setShowGroupModal={setShowGroupModal}
-  showSidebar={showSidebar}
-  setShowSidebar={setShowSidebar}
+  users={users}
+  setSelectedChat={(chat) => {
+    setSelectedChat(chat)
+    setMobileView("chat") // hide list, show chat
+  }}
+  className={mobileView === "chat" ? "hidden md:block" : "block md:block"}
 />
-      <main className="flex-1 flex">
-        <Routes>
 
-          <Route
-            path="chats"
-            element={
-              <>
-      
-                <ChatList
-                  chats={chats}
-                  setSelectedChat={setSelectedChat}
-                  user={user}
-                />
-
-               
-                <ChatWindow
+<ChatWindow
   selectedChat={selectedChat}
-  messages={messages.filter(m => m.chatId === selectedChat?.id)}
+  setSelectedChat={setSelectedChat}
+  messages={messages}
   newMessage={newMessage}
   setNewMessage={setNewMessage}
   handleSendMessage={handleSendMessage}
   user={user}
-  setShowSidebar={setShowSidebar}   // ✅ ADD THIS
-/>
-              </>
-            }
-          />
-
-          <Route
-            path="settings"
-            element={user ? <Settings user={user} /> : <div>Loading...</div>}
-          />
-
-          <Route
-            path="*"
-            element={<Navigate to="chats" replace />}
-          />
-
-        </Routes>
-      </main>
-
-      {showModal && (
-        <AddContactModal
-          users={users}
-          search={''}
-          setSearch={() => {}}
-          startChat={handleStartChat}
-          closeModal={() => setShowModal(false)}
+  setShowSidebar={setShowSidebar}
+  setMobileView={setMobileView}   // ✅ ADD THIS
+/>         </>
+          }
         />
-      )}
 
-      {showGroupModal && (
-        <GroupModal
-          users={users}
-          groupName={groupName}
-          setGroupName={setGroupName}
-          selectedUsers={selectedUsers}
-          setSelectedUsers={setSelectedUsers}
-          closeModal={() => setShowGroupModal(false)}
-          createGroup={createGroup}
+        {/* ================= SETTINGS ================= */}
+        <Route
+          path="settings"
+          element={
+            <Settings
+              user={user}
+              setUser={setUser}
+            />
+          }
         />
-      )}
-    </div>
+
+        {/* ================= DEFAULT ================= */}
+        <Route path="*" element={<Navigate to="chats" />} />
+
+      </Routes>
+
+    </main>
+
+    {/* MODALS */}
+    {showModal && (
+      <AddContactModal
+        users={users}
+        search={search}
+        setSearch={setSearch}
+        startChat={handleStartChat}
+        closeModal={() => setShowModal(false)}
+      />
+    )}
+
+    {showGroupModal && (
+      <GroupModal
+        users={users}
+        groupName={groupName}
+        setGroupName={setGroupName}
+        selectedUsers={selectedUsers}
+        setSelectedUsers={setSelectedUsers}
+        createGroup={createGroup}
+        closeModal={() => setShowGroupModal(false)}
+      />
+    )}
+
+  </div>
   )
 }

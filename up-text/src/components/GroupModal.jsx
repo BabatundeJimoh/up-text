@@ -1,29 +1,34 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 
 export default function GroupModal({
-  users,
-  groupName,
+  users = [],
+  groupName = '',
   setGroupName,
-  selectedUsers,
+  selectedUsers = [],
   setSelectedUsers,
   closeModal,
   createGroup
 }) {
-  const [search, setSearch] = React.useState('')
+  const [search, setSearch] = useState('')
 
+  // ✅ SAFE FILTER
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(search.toLowerCase())
+    user?.name?.toLowerCase().includes(search.toLowerCase())
   )
 
-  // ✅ FIXED TOGGLE LOGIC
+  // ✅ SAFE TOGGLE
   const toggleUser = (user) => {
-    const exists = selectedUsers.some(u => u._id === user._id)
+    if (!setSelectedUsers) return
+
+    const exists = selectedUsers?.some(u => u._id === user._id)
 
     if (exists) {
-      setSelectedUsers(selectedUsers.filter(u => u._id !== user._id))
+      setSelectedUsers(prev =>
+        prev.filter(u => u._id !== user._id)
+      )
     } else {
-      setSelectedUsers([...selectedUsers, user])
+      setSelectedUsers(prev => [...prev, user])
     }
   }
 
@@ -39,10 +44,10 @@ export default function GroupModal({
           placeholder="Group Name"
           className="w-full mb-3 px-3 py-2 border rounded outline-none"
           value={groupName}
-          onChange={(e) => setGroupName(e.target.value)}
+          onChange={(e) => setGroupName?.(e.target.value)}
         />
 
-        {/* SEARCH USERS */}
+        {/* SEARCH */}
         <input
           type="text"
           placeholder="Search users..."
@@ -51,22 +56,33 @@ export default function GroupModal({
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        {/* USER LIST */}
+        {/* USERS */}
         <div className="max-h-60 overflow-y-auto mb-3">
 
-          {filteredUsers.map((user) => (
-            <div
-              key={user._id}
-              className={`p-2 cursor-pointer rounded ${
-                selectedUsers.some(u => u._id === user._id)
-                  ? 'bg-purple-200'
-                  : 'hover:bg-gray-200'
-              }`}
-              onClick={() => toggleUser(user)}
-            >
-              {user.name}
-            </div>
-          ))}
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((user) => {
+              const isSelected =
+                selectedUsers?.some(u => u._id === user._id)
+
+              return (
+                <div
+                  key={user._id}
+                  className={`p-2 cursor-pointer rounded ${
+                    isSelected
+                      ? 'bg-purple-200'
+                      : 'hover:bg-gray-200'
+                  }`}
+                  onClick={() => toggleUser(user)}
+                >
+                  {user.name}
+                </div>
+              )
+            })
+          ) : (
+            <p className="text-sm text-gray-500 text-center">
+              No users found
+            </p>
+          )}
 
         </div>
 
@@ -82,7 +98,7 @@ export default function GroupModal({
 
           <button
             className="px-3 py-1 rounded bg-purple-500 hover:bg-purple-400 text-white"
-            onClick={() => createGroup(groupName, selectedUsers)}
+            onClick={() => createGroup?.(groupName, selectedUsers)}
           >
             Create
           </button>

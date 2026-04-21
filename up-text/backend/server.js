@@ -9,42 +9,28 @@ import messageRoutes from "./routes/messages.js"
 import chatRoutes from "./routes/chat.js"
 import Message from "./models/Message.js"
 import Chat from "./models/Chat.js"
+import User from "./models/User.js" // ✅ FIXED (IMPORTANT)
 import path from "path"
+import userRoutes from "./routes/user.js"
 
 dotenv.config()
 connectDB()
 
 const app = express()
 
-// =======================
-// MIDDLEWARE
-// =======================
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true,
-  })
-)
+app.use(cors({
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  credentials: true,
+}))
 
 app.use(express.json())
-
-// =======================
-// STATIC FILES
-// =======================
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")))
 
-// =======================
-// ROUTES
-// =======================
 app.use("/api/auth", authRoutes)
 app.use("/api/messages", messageRoutes)
 app.use("/api/chats", chatRoutes)
+app.use("/api/user", userRoutes)
 
-app.get("/", (req, res) => res.send("API is running 🚀"))
-
-// =======================
-// SERVER + SOCKET
-// =======================
 const server = http.createServer(app)
 
 const io = new Server(server, {
@@ -54,104 +40,158 @@ const io = new Server(server, {
   },
 })
 
-// =======================
-// ONLINE USERS STORE
-// =======================
 const onlineUsers = new Map()
 
-// =======================
-// SOCKET.IO
-// =======================
 io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id)
+  console.log("User connected:", socket.id)
 
-  // =======================
-  // 🟢 USER ONLINE
-  // =======================
-  socket.on("user_online", (userId) => {
+  // ================= ONLINE =================
+  socket.on("user_online", async (userId) => {
     if (!userId) return
 
-    onlineUsers.set(userId, socket.id)
+    try {
+      onlineUsers.set(userId, socket.id)
 
-    io.emit("online_users", Array.from(onlineUsers.keys()))
+      await User.findByIdAndUpdate(userId, {
+        lastSeen: null,
+      })
+
+      io.emit("online_users", Array.from(onlineUsers.keys()))
+    } catch (err) {
+      console.error(err.message)
+    }
   })
 
-  // =======================
-  // JOIN CHAT ROOM
-  // =======================
+  // ================= JOIN CHAT =================
   socket.on("join_chat", (chatId) => {
     if (!chatId) return
     socket.join(chatId)
   })
 
-  // =======================
-  // ✍️ TYPING INDICATOR
-  // =======================
-  socket.on("typing", ({ chatId, userId }) => {
-    socket.to(chatId).emit("typing", { chatId, userId })
-  })
-
-  socket.on("stop_typing", ({ chatId, userId }) => {
-    socket.to(chatId).emit("stop_typing", { chatId, userId })
-  })
-
-  // =======================
-  // SEND MESSAGE
-  // =======================
-  socket.on("send_message", async (data) => {
-    try {
-      const { chatId, sender, text } = data
-
-      if (!chatId || !sender || !text) return
-
-      // SAVE MESSAGE
-      const newMessage = await Message.create({
+  // ================= MARK SEEN =================
+ socket.on("mark_seen", async ({ chatId, userId }) => {
+  try {
+    // ================= MARK MESSAGES AS SEEN =================
+    await Message.updateMany(
+      {
         chatId,
-        sender,
-        text,
-      })
+        sender: { $ne: userId },
+        seen: false,
+      },
+      { seen: true }
+    )
 
-      // 🔥 UPDATE LAST MESSAGE IN CHAT
-      await Chat.findByIdAndUpdate(chatId, {
+    // ================= RESET UNREAD COUNT =================
+    const chat = await Chat.findById(chatId)
+
+    if (chat) {
+      if (!chat.unreadCounts) {
+        chat.unreadCounts = new Map()
+      }
+
+      // reset ONLY for this user
+      chat.unreadCounts.set(userId, 0)
+
+      await chat.save()
+    }
+
+    // ================= NOTIFY CHAT ROOM =================
+    io.to(chatId).emit("messages_seen", {
+      chatId,
+      userId,
+    })
+
+  } catch (err) {
+    console.error(err.message)
+  }
+})
+
+  // ================= SEND MESSAGE =================
+socket.on("send_message", async (data) => {
+  try {
+    const { chatId, sender, text } = data
+    if (!chatId || !sender || !text) return
+
+    // ================= CREATE MESSAGE =================
+    const newMessage = await Message.create({
+      chatId,
+      sender,
+      text,
+    })
+
+    // ================= FIND CHAT =================
+    const chat = await Chat.findById(chatId)
+    if (!chat) return
+
+    // ================= UPDATE LAST MESSAGE =================
+    chat.lastMessage = text
+    chat.updatedAt = new Date()
+
+    // ================= ENSURE MAP =================
+    if (!chat.unreadCounts) {
+      chat.unreadCounts = new Map()
+    }
+
+    const senderId = sender.toString()
+
+    // ================= INCREMENT UNREAD =================
+    chat.members.forEach((memberId) => {
+      const id = memberId.toString()
+
+      if (id !== senderId) {
+        const current = chat.unreadCounts.get(id) || 0
+        chat.unreadCounts.set(id, current + 1)
+      }
+    })
+
+    await chat.save()
+
+    // ================= POPULATE =================
+    const populated = await newMessage.populate("sender", "name profilePic")
+
+    // ================= EMIT MESSAGE =================
+    io.to(chatId).emit("receive_message", populated)
+
+    // 🔥 OPTIONAL: notify all users in chat list update
+    chat.members.forEach((memberId) => {
+      io.emit(`chat_update_${memberId.toString()}`, {
+        chatId,
         lastMessage: text,
       })
+    })
 
-      // POPULATE SENDER
-      const populatedMessage = await newMessage.populate(
-        "sender",
-        "name profilePic"
-      )
+  } catch (err) {
+    console.error("SEND MESSAGE ERROR:", err.message)
+  }
+})
 
-      // EMIT MESSAGE
-      io.to(chatId).emit("receive_message", populatedMessage)
 
-    } catch (err) {
-      console.error("🔥 Socket Error:", err.message)
-    }
-  })
+  // ================= DISCONNECT =================
+  socket.on("disconnect", async () => {
+    try {
+      for (let [userId, socketId] of onlineUsers.entries()) {
+        if (socketId === socket.id) {
+          onlineUsers.delete(userId)
 
-  // =======================
-  // DISCONNECT
-  // =======================
-  socket.on("disconnect", () => {
-    for (let [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId)
-        break
+          await User.findByIdAndUpdate(userId, {
+            lastSeen: new Date(),
+          })
+          break
+        }
       }
+
+      io.emit("online_users", Array.from(onlineUsers.keys()))
+    } catch (err) {
+      console.error(err.message)
     }
-
-    io.emit("online_users", Array.from(onlineUsers.keys()))
-
-    console.log("❌ User disconnected:", socket.id)
   })
 })
 
-// =======================
-// START SERVER
-// =======================
+
+
+
 const PORT = process.env.PORT || 5000
 
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`)
 })
