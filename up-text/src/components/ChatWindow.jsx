@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import socket from '../socket'
 
 export default function ChatWindow({
+  className = "",
   selectedChat,
   messages,
   newMessage,
@@ -11,8 +12,11 @@ export default function ChatWindow({
   handleSendMessage,
   user,
   setShowSidebar,
-  setSelectedChat, // ✅ FIX: ADD THIS
+  setSelectedChat,
+  setMobileView,
 }) {
+
+  const [imageError, setImageError] = useState(false)
 
   // ================= MARK AS SEEN =================
   useEffect(() => {
@@ -30,28 +34,52 @@ export default function ChatWindow({
     return selectedChat.members.find(m => m._id !== user._id)
   }, [selectedChat, user])
 
+  // ================= GET PROFILE PICTURE =================
+  const getProfilePic = () => {
+    if (!otherUser) return "https://i.pravatar.cc/150?img=3"
+    
+    if (imageError) {
+      const seed = otherUser._id || otherUser.name || 'default'
+      return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
+    }
+
+    if (otherUser.profilePic) {
+      if (otherUser.profilePic.startsWith('http')) {
+        return otherUser.profilePic
+      }
+      return `http://localhost:5000${otherUser.profilePic}`
+    }
+
+    const seed = otherUser._id || otherUser.name || 'default'
+    return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
+  }
+
+  const handleImageError = () => {
+    setImageError(true)
+  }
+
   return (
-    <section className="flex-1 max-w-3xl mx-auto flex flex-col justify-between bg-[#F5F7FB] text-black p-4 relative">
-   {/* ================= HEADER ================= */}
+    <section className={`flex-1 max-w-3xl mx-auto flex flex-col justify-between bg-[#F5F7FB] text-black p-4 relative ${className}`}>
+      {/* ================= HEADER ================= */}
       <div className="flex items-center justify-between mb-4 p-3 rounded-lg w-full bg-white">
 
         {/* LEFT */}
         <div className="flex items-center gap-3">
 
-          {/* 🔥 BACK BUTTON (MOBILE ONLY) */}
+          {/* BACK BUTTON (MOBILE ONLY) */}
           <button
             className="md:hidden text-2xl mr-1"
-         onClick={() => setMobileView("list")}
+            onClick={() => setMobileView("list")}
           >
             ←
           </button>
-          
 
           <div className="relative">
             <img
-              src={otherUser?.profilePic || "https://i.pravatar.cc/150?img=3"}
+              src={getProfilePic()}
               alt="User"
-              className="w-12 h-12 rounded-full object-cover"
+              className="w-12 h-12 rounded-full object-cover bg-gray-200"
+              onError={handleImageError}
             />
 
             <span
@@ -65,18 +93,22 @@ export default function ChatWindow({
 
           <div className="flex flex-col">
             <p className="font-semibold text-[#7B61FF]">
-              {otherUser?.name || selectedChat?.name || 'User'}
+              {selectedChat?.isGroup 
+                ? selectedChat.name 
+                : (otherUser?.name || selectedChat?.name || 'User')}
             </p>
 
             <span className="text-xs text-gray-400">
-              {otherUser?.lastSeen === null
-                ? "Online"
-                : otherUser?.lastSeen
-                ? `Last seen ${new Date(otherUser.lastSeen).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}`
-                : ""}
+              {selectedChat?.isGroup 
+                ? `${selectedChat.members?.length || 0} members`
+                : (otherUser?.lastSeen === null
+                  ? "Online"
+                  : otherUser?.lastSeen
+                  ? `Last seen ${new Date(otherUser.lastSeen).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}`
+                  : "Offline")}
             </span>
           </div>
 
@@ -102,22 +134,16 @@ export default function ChatWindow({
         )}
 
         {messages.map((msg, idx) => {
-
-          const senderId =
-            typeof msg.sender === 'object'
-              ? msg.sender._id
-              : msg.sender
-
+          const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender
           const isSender = senderId === user?._id
 
           return (
             <div
-              key={msg._id || idx}
+              key={msg._id || msg.tempId || idx}
               className={`flex flex-col mb-3 ${
                 isSender ? 'items-end' : 'items-start'
               }`}
             >
-
               <div
                 className={`px-4 py-2 rounded-lg max-w-[70%] ${
                   isSender
@@ -129,7 +155,6 @@ export default function ChatWindow({
               </div>
 
               <div className="flex items-center gap-2 mt-1 px-1">
-
                 <span className="text-xs text-gray-400">
                   {msg.createdAt
                     ? new Date(msg.createdAt).toLocaleTimeString([], {
@@ -145,22 +170,18 @@ export default function ChatWindow({
                     <span className={`w-1.5 h-1.5 rounded-full ${msg.seen ? 'bg-blue-500' : 'bg-gray-400'}`} />
                   </div>
                 )}
-
               </div>
-
             </div>
           )
         })}
-
       </div>
 
       {/* ================= INPUT ================= */}
       <div className="flex gap-2">
-
         <input
           type="text"
           placeholder="Type a message..."
-          className="flex-1 px-3 py-2 border rounded outline-none"
+          className="flex-1 px-3 py-2 border rounded outline-none focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF]"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
@@ -168,13 +189,11 @@ export default function ChatWindow({
 
         <button
           onClick={handleSendMessage}
-          className="bg-[#7B61FF] px-4 py-2 rounded text-white"
+          className="bg-[#7B61FF] px-4 py-2 rounded text-white hover:bg-[#6B51E5] transition"
         >
           Send
         </button>
-
       </div>
-
     </section>
   )
 }

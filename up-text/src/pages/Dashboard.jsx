@@ -34,9 +34,11 @@ export default function Dashboard() {
 
   const [groupName, setGroupName] = useState('')
   const [selectedUsers, setSelectedUsers] = useState([])
-const [mobileView, setMobileView] = useState("list") 
+  const [mobileView, setMobileView] = useState("list")
+
   const [newMessage, setNewMessage] = useState('')
   const socketInit = useRef(false)
+  const toastShownRef = useRef(new Set()) // Track shown toasts to prevent duplicates
 
   // ================= LOAD USER =================
   useEffect(() => {
@@ -72,7 +74,8 @@ const [mobileView, setMobileView] = useState("list")
             id: chat._id,
             name: chat.isGroup ? chat.name : other?.name || 'User',
             lastMessage: chat.lastMessage || '',
-            updatedAt: chat.updatedAt || new Date()
+            updatedAt: chat.updatedAt || new Date(),
+            unreadCount: 0 // Initialize unread count
           }
         })
 
@@ -92,91 +95,181 @@ const [mobileView, setMobileView] = useState("list")
     if (!selectedChat?.id) return
 
     axios.get(`http://localhost:5000/api/messages/${selectedChat.id}`)
-      .then(res => setMessages(res.data))
+      .then(res => {
+        setMessages(res.data)
+        // Reset unread count when opening a chat
+        if (selectedChat.id) {
+          setChats(prev => 
+            prev.map(chat => 
+              chat.id === selectedChat.id 
+                ? { ...chat, unreadCount: 0 }
+                : chat
+            )
+          )
+        }
+      })
   }, [selectedChat])
 
- 
-//SOCKET RECEIVE + SEEN
+  // Helper function to get profile image URL
+  const getProfileImageUrl = (sender) => {
+    if (!sender) return null
+    
+    // Try to get profilePic from sender object
+    let profilePic = sender.profilePic
+    
+    if (!profilePic) return null
+    
+    // If it's already a full URL, return as is
+    if (profilePic.startsWith('http')) {
+      return profilePic
+    }
+    
+    // Otherwise add localhost prefix
+    return `http://localhost:5000${profilePic}`
+  }
+
+  // ================= SOCKET (FIXED - NO DUPLICATES) =================
   useEffect(() => {
-  if (socketInit.current) return
-  socketInit.current = true
+    if (!user?._id) return
 
-  // ================= RECEIVE MESSAGE =================
-  socket.on('receive_message', (msg) => {
-    setMessages(prev => [...prev, msg])
+    const handleMessage = (msg) => {
+      // Add message to chat window if it's the selected chat
+      setMessages(prev => [...prev, msg])
 
-    const senderId =
-      typeof msg.sender === 'object'
-        ? msg.sender._id
-        : msg.sender
+      const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender
+      const isOwnMessage = senderId === user._id
+      const isCurrentChat = msg.chatId === selectedChat?.id
 
-    setChats(prev => {
-      const updated = prev.map(chat => {
-        if (chat.id === msg.chatId) {
-          return {
-            ...chat,
-            lastMessage: msg.text,
-            updatedAt: new Date(),
-
-            // ❌ DO NOT increment here
-            // backend handles unreadCount now
+      // Update chat list
+      setChats(prev => {
+        const updated = prev.map(chat => {
+          if (chat.id === msg.chatId) {
+            return {
+              ...chat,
+              lastMessage: msg.text,
+              updatedAt: new Date(),
+              // Only increment unread count if:
+              // 1. Message is NOT from current user (sender)
+              // 2. AND the message is NOT from the currently open chat
+              unreadCount: !isOwnMessage && !isCurrentChat
+                ? (chat.unreadCount || 0) + 1
+                : isCurrentChat ? 0 : (chat.unreadCount || 0)
+            }
           }
-        }
-        return chat
+          return chat
+        })
+
+        return sortChats(updated)
       })
 
-      return sortChats(updated)
-    })
-
-    // toast only for other user messages
-    if (senderId !== user?._id) {
-      toast(`${msg.sender?.name || 'New'}: ${msg.text}`)
+      // Show toast notification ONLY for receiver and ONLY when chat is not open
+      const shouldShowToast = !isOwnMessage && !isCurrentChat
+      
+      // Create a unique key for this message to prevent duplicate toasts
+      const toastKey = `${msg.chatId}_${msg.createdAt || Date.now()}`
+      
+      if (shouldShowToast && !toastShownRef.current.has(toastKey)) {
+        toastShownRef.current.add(toastKey)
+        
+        // Clean up the set after 1 second to prevent memory leak
+        setTimeout(() => {
+          toastShownRef.current.delete(toastKey)
+        }, 1000)
+        
+        // Get the sender object (might be embedded or just ID)
+        const sender = typeof msg.sender === 'object' ? msg.sender : null
+        const senderName = sender?.name || 'New Message'
+        
+        // Get the profile image URL
+        let imageUrl = getProfileImageUrl(sender)
+        
+        // Fallback to DiceBear if no profile image
+        if (!imageUrl) {
+          imageUrl = `https://api.dicebear.com/7.x/personas/svg?seed=${senderId}`
+        }
+        
+        toast.custom((t) => (
+          <div
+            className={`${
+              t.visible ? 'animate-enter' : 'animate-leave'
+            } max-w-sm w-full bg-white shadow-xl rounded-xl flex items-center gap-3 p-3 border`}
+          >
+            <img
+              src={imageUrl}
+              className="w-10 h-10 rounded-full object-cover"
+              alt={senderName}
+              onError={(e) => {
+                // If image fails to load, fallback to DiceBear
+                e.target.src = `https://api.dicebear.com/7.x/personas/svg?seed=${senderId}`
+              }}
+            />
+            <div className="flex flex-col flex-1">
+              <p className="text-sm font-semibold text-[#7B61FF]">
+                {senderName}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {msg.text}
+              </p>
+            </div>
+            <span className="text-[10px] text-gray-400">now</span>
+          </div>
+        ))
+      }
     }
-  })
 
-  // ================= SEE MESSAGES =================
-  socket.on("messages_seen", ({ chatId }) => {
-    setChats(prev =>
+    socket.on('receive_message', handleMessage)
+
+    return () => {
+      socket.off('receive_message', handleMessage)
+    }
+  }, [user, selectedChat])
+
+  // ================= SEND =================
+// ================= SEND =================
+const handleSendMessage = () => {
+  if (!newMessage.trim() || !selectedChat?.id || !user?._id) return
+
+  const tempId = `temp_${Date.now()}_${Math.random()}`
+
+  const msg = {
+    chatId: selectedChat.id,
+    sender: user._id,
+    text: newMessage,
+    createdAt: new Date(),
+    tempId: tempId // Add temporary ID for tracking
+  }
+
+  // Add message locally with optimistic update
+  const localMsg = { 
+    ...msg, 
+    seen: false,
+    _id: tempId // Use temp ID as _id temporarily
+  }
+  
+  setMessages(prev => [...prev, localMsg])
+
+  // Update chat list - NO badge increment for sender
+  setChats(prev =>
+    sortChats(
       prev.map(chat =>
-        chat.id === chatId
-          ? { ...chat, unreadCount: 0 }
+        chat.id === selectedChat.id
+          ? { 
+              ...chat, 
+              lastMessage: newMessage, 
+              updatedAt: new Date(),
+              unreadCount: chat.unreadCount || 0
+            }
           : chat
       )
     )
-  })
+  )
 
-}, [user])
+  // Emit to socket - this will be received by the receiver only
+  // The socket should NOT echo back to the sender
+  socket.emit('send_message', msg)
 
-  // ================= SEND =================
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedChat?.id || !user?._id) return
-
-    const msg = {
-      chatId: selectedChat.id,
-      sender: user._id,
-      text: newMessage
-    }
-
-    socket.emit('send_message', msg)
-
-    // 🔥 INSTANT UI UPDATE
-    setMessages(prev => [
-      ...prev,
-      { ...msg, createdAt: new Date(), seen: false }
-    ])
-
-    setChats(prev =>
-      sortChats(
-        prev.map(chat =>
-          chat.id === selectedChat.id
-            ? { ...chat, lastMessage: newMessage, updatedAt: new Date() }
-            : chat
-        )
-      )
-    )
-
-    setNewMessage('')
-  }
+  setNewMessage('')
+}
 
   // ================= START CHAT =================
   const handleStartChat = async (contact) => {
@@ -202,15 +295,14 @@ const [mobileView, setMobileView] = useState("list")
       id: res.data._id,
       name: contact.name,
       lastMessage: '',
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      unreadCount: 0
     }
 
     setChats(prev => sortChats([newChat, ...prev]))
     setSelectedChat(newChat)
     setShowModal(false)
   }
-
-  
 
   // ================= CREATE GROUP =================
   const createGroup = async (name, list) => {
@@ -226,7 +318,8 @@ const [mobileView, setMobileView] = useState("list")
       id: res.data._id,
       lastMessage: '',
       updatedAt: new Date(),
-      isGroup: true
+      isGroup: true,
+      unreadCount: 0
     }
 
     setChats(prev => sortChats([group, ...prev]))
@@ -237,91 +330,86 @@ const [mobileView, setMobileView] = useState("list")
   if (!user) return <div className="p-5">Loading...</div>
 
   return (
-   <div className="flex h-screen  bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]">
+    <div className="flex h-screen bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]">
 
-    <SideBar
-      user={user}
-      setShowModal={setShowModal}
-      setShowGroupModal={setShowGroupModal}
-      showSidebar={showSidebar}
-      setShowSidebar={setShowSidebar}
-    />
-
-    <main className="flex flex-1">
-
-      <Routes>
-
-        {/* ================= CHATS ================= */}
-        <Route
-          path="chats"
-          element={
-            <>
-<ChatList
-  chats={chats}
-  user={user}
-  users={users}
-  setSelectedChat={(chat) => {
-    setSelectedChat(chat)
-    setMobileView("chat") // hide list, show chat
-  }}
-  className={mobileView === "chat" ? "hidden md:block" : "block md:block"}
-/>
-
-<ChatWindow
-  selectedChat={selectedChat}
-  setSelectedChat={setSelectedChat}
-  messages={messages}
-  newMessage={newMessage}
-  setNewMessage={setNewMessage}
-  handleSendMessage={handleSendMessage}
-  user={user}
-  setShowSidebar={setShowSidebar}
-  setMobileView={setMobileView}   // ✅ ADD THIS
-/>         </>
-          }
-        />
-
-        {/* ================= SETTINGS ================= */}
-        <Route
-          path="settings"
-          element={
-            <Settings
-              user={user}
-              setUser={setUser}
-            />
-          }
-        />
-
-        {/* ================= DEFAULT ================= */}
-        <Route path="*" element={<Navigate to="chats" />} />
-
-      </Routes>
-
-    </main>
-
-    {/* MODALS */}
-    {showModal && (
-      <AddContactModal
-        users={users}
-        search={search}
-        setSearch={setSearch}
-        startChat={handleStartChat}
-        closeModal={() => setShowModal(false)}
+      <SideBar
+        user={user}
+        setShowModal={setShowModal}
+        setShowGroupModal={setShowGroupModal}
+        showSidebar={showSidebar}
+        setShowSidebar={setShowSidebar}
       />
-    )}
 
-    {showGroupModal && (
-      <GroupModal
-        users={users}
-        groupName={groupName}
-        setGroupName={setGroupName}
-        selectedUsers={selectedUsers}
-        setSelectedUsers={setSelectedUsers}
-        createGroup={createGroup}
-        closeModal={() => setShowGroupModal(false)}
-      />
-    )}
+      <main className="flex flex-1">
 
-  </div>
+        <Routes>
+
+          <Route
+            path="chats"
+            element={
+              <>
+                <ChatList
+                  chats={chats}
+                  user={user}
+                  users={users}
+                  setShowSidebar={setShowSidebar}
+                  setSelectedChat={(chat) => {
+                    setSelectedChat(chat)
+                    setMobileView("chat")
+                  }}
+                  className={mobileView === "chat" ? "hidden md:block" : "block md:block"}
+                />
+
+                <ChatWindow
+                  selectedChat={selectedChat}
+                  messages={messages}
+                  newMessage={newMessage}
+                  setNewMessage={setNewMessage}
+                  handleSendMessage={handleSendMessage}
+                  user={user}
+                  setShowSidebar={setShowSidebar}
+                  setMobileView={setMobileView}
+                  className={mobileView === "list" ? "hidden md:flex" : "flex"}
+                />
+              </>
+            }
+          />
+
+          <Route
+            path="settings"
+            element={
+              <Settings user={user} setUser={setUser} />
+            }
+          />
+
+          <Route path="*" element={<Navigate to="chats" />} />
+
+        </Routes>
+
+      </main>
+
+      {showModal && (
+        <AddContactModal
+          users={users}
+          search={search}
+          setSearch={setSearch}
+          startChat={handleStartChat}
+          closeModal={() => setShowModal(false)}
+        />
+      )}
+
+      {showGroupModal && (
+        <GroupModal
+          users={users}
+          groupName={groupName}
+          setGroupName={setGroupName}
+          selectedUsers={selectedUsers}
+          setSelectedUsers={setSelectedUsers}
+          createGroup={createGroup}
+          closeModal={() => setShowGroupModal(false)}
+        />
+      )}
+
+    </div>
   )
 }
