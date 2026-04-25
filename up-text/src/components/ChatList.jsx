@@ -116,8 +116,8 @@ export default function ChatList({ chats, setSelectedChat, user, users = [], cla
         <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
       </div>
 
-      {/* CHAT LIST */}
-      <div className="space-y-3 overflow-y-auto h-[calc(100vh-140px)]">
+      {/* CHAT LIST WITH INVISIBLE SCROLLBAR */}
+      <div className="space-y-3 overflow-y-auto h-[calc(100vh-140px)] scrollbar-invisible">
         {filteredChats.length === 0 && (
           <p className="text-gray-400 text-sm text-center mt-10">
             No chats found
@@ -174,6 +174,18 @@ export default function ChatList({ chats, setSelectedChat, user, users = [], cla
           )
         })}
       </div>
+
+      {/* Add global styles for invisible scrollbar */}
+      <style jsx global>{`
+        .scrollbar-invisible {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        .scrollbar-invisible::-webkit-scrollbar {
+          display: none; /* Chrome, Safari, Opera */
+        }
+      `}</style>
     </section>
   )
 }

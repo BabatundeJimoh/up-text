@@ -12,6 +12,7 @@ import AddContactModal from '../components/AddContactModal'
 import GroupModal from '../components/GroupModal'
 import Settings from '../components/Settings'
 
+
 const socket = io('http://localhost:5000')
 
 const sortChats = (list) =>
@@ -38,7 +39,13 @@ export default function Dashboard() {
 
   const [newMessage, setNewMessage] = useState('')
   const socketInit = useRef(false)
-  const toastShownRef = useRef(new Set()) // Track shown toasts to prevent duplicates
+  const toastShownRef = useRef(new Set())
+  const pendingMessagesRef = useRef(new Map())
+  
+  // Audio refs
+  const sentSoundRef = useRef(null)
+  const receivedSoundRef = useRef(null)
+  const [soundEnabled, setSoundEnabled] = useState(true) // Allow user to toggle sounds
 
   // ================= LOAD USER =================
   useEffect(() => {
@@ -47,7 +54,51 @@ export default function Dashboard() {
 
     const parsed = JSON.parse(stored)
     if (parsed?._id) setUser(parsed)
+    
+    // Load sound preference from localStorage
+    const savedSoundPref = localStorage.getItem('soundEnabled')
+    if (savedSoundPref !== null) {
+      setSoundEnabled(savedSoundPref === 'true')
+    }
   }, [])
+
+  // ================= INITIALIZE AUDIO =================
+  useEffect(() => {
+    // Create audio elements
+    sentSoundRef.current = new Audio('../notifications/sent.mp3')
+    receivedSoundRef.current = new Audio('../notifications/received.mp3')
+    
+    // Preload sounds
+    sentSoundRef.current.load()
+    receivedSoundRef.current.load()
+    
+    return () => {
+      // Cleanup
+      if (sentSoundRef.current) {
+        sentSoundRef.current.pause()
+        sentSoundRef.current = null
+      }
+      if (receivedSoundRef.current) {
+        receivedSoundRef.current.pause()
+        receivedSoundRef.current = null
+      }
+    }
+  }, [])
+
+  // Function to play sound with error handling
+  const playSound = async (soundRef) => {
+    if (!soundEnabled || !soundRef.current) return
+    
+    try {
+      // Reset the audio to start if it's already playing
+      soundRef.current.currentTime = 0
+      await soundRef.current.play()
+    } catch (error) {
+      console.log('Audio play failed:', error)
+      // Most browsers require user interaction first
+      // The sound will work after first user interaction
+    }
+  }
 
   // ================= LOAD USERS =================
   useEffect(() => {
@@ -75,7 +126,7 @@ export default function Dashboard() {
             name: chat.isGroup ? chat.name : other?.name || 'User',
             lastMessage: chat.lastMessage || '',
             updatedAt: chat.updatedAt || new Date(),
-            unreadCount: 0 // Initialize unread count
+            unreadCount: 0
           }
         })
 
@@ -97,7 +148,6 @@ export default function Dashboard() {
     axios.get(`http://localhost:5000/api/messages/${selectedChat.id}`)
       .then(res => {
         setMessages(res.data)
-        // Reset unread count when opening a chat
         if (selectedChat.id) {
           setChats(prev => 
             prev.map(chat => 
@@ -114,33 +164,59 @@ export default function Dashboard() {
   const getProfileImageUrl = (sender) => {
     if (!sender) return null
     
-    // Try to get profilePic from sender object
     let profilePic = sender.profilePic
     
     if (!profilePic) return null
     
-    // If it's already a full URL, return as is
     if (profilePic.startsWith('http')) {
       return profilePic
     }
     
-    // Otherwise add localhost prefix
     return `http://localhost:5000${profilePic}`
   }
 
-  // ================= SOCKET (FIXED - NO DUPLICATES) =================
+  // ================= SOCKET =================
   useEffect(() => {
     if (!user?._id) return
 
     const handleMessage = (msg) => {
-      // Add message to chat window if it's the selected chat
-      setMessages(prev => [...prev, msg])
-
       const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender
       const isOwnMessage = senderId === user._id
+      
+      if (isOwnMessage) {
+        return
+      }
+
+      // Play received sound
+      playSound(receivedSoundRef)
+
+      const messageKey = msg._id || `${msg.chatId}_${msg.text}_${msg.createdAt}`
+      
+      if (pendingMessagesRef.current.has(messageKey)) {
+        return
+      }
+      
+      pendingMessagesRef.current.set(messageKey, Date.now())
+      
+      setTimeout(() => {
+        pendingMessagesRef.current.delete(messageKey)
+      }, 1000)
+
+      setMessages(prev => {
+        const exists = prev.some(m => 
+          (m._id && m._id === msg._id) || 
+          (m.tempId && m.tempId === msg.tempId)
+        )
+        
+        if (exists) {
+          return prev
+        }
+        
+        return [...prev, msg]
+      })
+
       const isCurrentChat = msg.chatId === selectedChat?.id
 
-      // Update chat list
       setChats(prev => {
         const updated = prev.map(chat => {
           if (chat.id === msg.chatId) {
@@ -148,12 +224,9 @@ export default function Dashboard() {
               ...chat,
               lastMessage: msg.text,
               updatedAt: new Date(),
-              // Only increment unread count if:
-              // 1. Message is NOT from current user (sender)
-              // 2. AND the message is NOT from the currently open chat
-              unreadCount: !isOwnMessage && !isCurrentChat
+              unreadCount: !isCurrentChat
                 ? (chat.unreadCount || 0) + 1
-                : isCurrentChat ? 0 : (chat.unreadCount || 0)
+                : 0
             }
           }
           return chat
@@ -162,28 +235,21 @@ export default function Dashboard() {
         return sortChats(updated)
       })
 
-      // Show toast notification ONLY for receiver and ONLY when chat is not open
-      const shouldShowToast = !isOwnMessage && !isCurrentChat
-      
-      // Create a unique key for this message to prevent duplicate toasts
+      const shouldShowToast = !isCurrentChat
       const toastKey = `${msg.chatId}_${msg.createdAt || Date.now()}`
       
       if (shouldShowToast && !toastShownRef.current.has(toastKey)) {
         toastShownRef.current.add(toastKey)
         
-        // Clean up the set after 1 second to prevent memory leak
         setTimeout(() => {
           toastShownRef.current.delete(toastKey)
         }, 1000)
         
-        // Get the sender object (might be embedded or just ID)
         const sender = typeof msg.sender === 'object' ? msg.sender : null
         const senderName = sender?.name || 'New Message'
         
-        // Get the profile image URL
         let imageUrl = getProfileImageUrl(sender)
         
-        // Fallback to DiceBear if no profile image
         if (!imageUrl) {
           imageUrl = `https://api.dicebear.com/7.x/personas/svg?seed=${senderId}`
         }
@@ -199,7 +265,6 @@ export default function Dashboard() {
               className="w-10 h-10 rounded-full object-cover"
               alt={senderName}
               onError={(e) => {
-                // If image fails to load, fallback to DiceBear
                 e.target.src = `https://api.dicebear.com/7.x/personas/svg?seed=${senderId}`
               }}
             />
@@ -224,52 +289,51 @@ export default function Dashboard() {
     }
   }, [user, selectedChat])
 
-  // ================= SEND =================
-// ================= SEND =================
-const handleSendMessage = () => {
-  if (!newMessage.trim() || !selectedChat?.id || !user?._id) return
+  // ================= SEND MESSAGE =================
+  const handleSendMessage = () => {
+    if (!newMessage.trim() || !selectedChat?.id || !user?._id) return
 
-  const tempId = `temp_${Date.now()}_${Math.random()}`
+    // Play sent sound
+    playSound(sentSoundRef)
 
-  const msg = {
-    chatId: selectedChat.id,
-    sender: user._id,
-    text: newMessage,
-    createdAt: new Date(),
-    tempId: tempId // Add temporary ID for tracking
-  }
+    const tempId = `temp_${Date.now()}_${Math.random()}`
 
-  // Add message locally with optimistic update
-  const localMsg = { 
-    ...msg, 
-    seen: false,
-    _id: tempId // Use temp ID as _id temporarily
-  }
-  
-  setMessages(prev => [...prev, localMsg])
+    const msg = {
+      chatId: selectedChat.id,
+      sender: user._id,
+      text: newMessage,
+      createdAt: new Date().toISOString(),
+      tempId: tempId
+    }
 
-  // Update chat list - NO badge increment for sender
-  setChats(prev =>
-    sortChats(
-      prev.map(chat =>
-        chat.id === selectedChat.id
-          ? { 
-              ...chat, 
-              lastMessage: newMessage, 
-              updatedAt: new Date(),
-              unreadCount: chat.unreadCount || 0
-            }
-          : chat
+    const localMsg = { 
+      ...msg, 
+      seen: false,
+      _id: tempId,
+      sender: user._id
+    }
+    
+    setMessages(prev => [...prev, localMsg])
+
+    setChats(prev =>
+      sortChats(
+        prev.map(chat =>
+          chat.id === selectedChat.id
+            ? { 
+                ...chat, 
+                lastMessage: newMessage, 
+                updatedAt: new Date(),
+                unreadCount: chat.unreadCount || 0
+              }
+            : chat
+        )
       )
     )
-  )
 
-  // Emit to socket - this will be received by the receiver only
-  // The socket should NOT echo back to the sender
-  socket.emit('send_message', msg)
+    socket.emit('send_message', msg)
 
-  setNewMessage('')
-}
+    setNewMessage('')
+  }
 
   // ================= START CHAT =================
   const handleStartChat = async (contact) => {
@@ -327,6 +391,13 @@ const handleSendMessage = () => {
     setShowGroupModal(false)
   }
 
+  // Toggle sound function (you can add a button in settings)
+  const toggleSound = () => {
+    const newValue = !soundEnabled
+    setSoundEnabled(newValue)
+    localStorage.setItem('soundEnabled', newValue)
+  }
+
   if (!user) return <div className="p-5">Loading...</div>
 
   return (
@@ -378,7 +449,12 @@ const handleSendMessage = () => {
           <Route
             path="settings"
             element={
-              <Settings user={user} setUser={setUser} />
+              <Settings 
+                user={user} 
+                setUser={setUser}
+                soundEnabled={soundEnabled}
+                toggleSound={toggleSound}
+              />
             }
           />
 
