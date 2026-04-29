@@ -453,6 +453,7 @@ export default function Dashboard() {
                 user={user} 
                 setUser={setUser}
                 soundEnabled={soundEnabled}
+                setShowSidebar={setShowSidebar}
                 toggleSound={toggleSound}
               />
             }

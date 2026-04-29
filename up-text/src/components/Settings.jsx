@@ -122,6 +122,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
         >
           ☰
         </button>
+        
       </div>
 
       {/* PROFILE */}
