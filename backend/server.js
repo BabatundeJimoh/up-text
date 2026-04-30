@@ -9,7 +9,7 @@ import messageRoutes from "./routes/messages.js"
 import chatRoutes from "./routes/chat.js"
 import Message from "./models/Message.js"
 import Chat from "./models/Chat.js"
-import User from "./models/User.js" // ✅ FIXED (IMPORTANT)
+import User from "./models/User.js"
 import path from "path"
 import userRoutes from "./routes/user.js"
 
@@ -18,14 +18,21 @@ connectDB()
 
 const app = express()
 
+// ================= ROOT ROUTE =================
 app.get("/", (req, res) => {
   res.send("API is running 🚀");
-});
+})
 
+/**
+ * ================= FIXED CLIENT URL =================
+ * ONLY CHANGE: proper frontend URL for production
+ */
+const CLIENT_URL =
+  process.env.CLIENT_URL || "https://up-text-frontend.onrender.com"
 
-
+// ================= CORS (EXPRESS) =================
 app.use(cors({
-  origin: process.env.CLIENT_URL || "https://up-text-backend.onrender.com",
+  origin: CLIENT_URL,
   credentials: true,
 }))
 
@@ -37,11 +44,16 @@ app.use("/api/messages", messageRoutes)
 app.use("/api/chats", chatRoutes)
 app.use("/api/user", userRoutes)
 
+// ================= HTTP SERVER =================
 const server = http.createServer(app)
 
+/**
+ * ================= SOCKET.IO =================
+ * FIXED: correct frontend origin for socket connection
+ */
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "https://up-text-backend.onrender.com",
+    origin: CLIENT_URL,
     methods: ["GET", "POST"],
   },
 })
@@ -75,102 +87,87 @@ io.on("connection", (socket) => {
   })
 
   // ================= MARK SEEN =================
- socket.on("mark_seen", async ({ chatId, userId }) => {
-  try {
-    // ================= MARK MESSAGES AS SEEN =================
-    await Message.updateMany(
-      {
+  socket.on("mark_seen", async ({ chatId, userId }) => {
+    try {
+      await Message.updateMany(
+        {
+          chatId,
+          sender: { $ne: userId },
+          seen: false,
+        },
+        { seen: true }
+      )
+
+      const chat = await Chat.findById(chatId)
+
+      if (chat) {
+        if (!chat.unreadCounts) {
+          chat.unreadCounts = new Map()
+        }
+
+        chat.unreadCounts.set(userId, 0)
+        await chat.save()
+      }
+
+      io.to(chatId).emit("messages_seen", {
         chatId,
-        sender: { $ne: userId },
-        seen: false,
-      },
-      { seen: true }
-    )
+        userId,
+      })
+    } catch (err) {
+      console.error(err.message)
+    }
+  })
 
-    // ================= RESET UNREAD COUNT =================
-    const chat = await Chat.findById(chatId)
+  // ================= SEND MESSAGE =================
+  socket.on("send_message", async (data) => {
+    try {
+      const { chatId, sender, text } = data
+      if (!chatId || !sender || !text) return
 
-    if (chat) {
+      const newMessage = await Message.create({
+        chatId,
+        sender,
+        text,
+      })
+
+      const chat = await Chat.findById(chatId)
+      if (!chat) return
+
+      chat.lastMessage = text
+      chat.updatedAt = new Date()
+
       if (!chat.unreadCounts) {
         chat.unreadCounts = new Map()
       }
 
-      // reset ONLY for this user
-      chat.unreadCounts.set(userId, 0)
+      const senderId = sender.toString()
+
+      chat.members.forEach((memberId) => {
+        const id = memberId.toString()
+
+        if (id !== senderId) {
+          const current = chat.unreadCounts.get(id) || 0
+          chat.unreadCounts.set(id, current + 1)
+        }
+      })
 
       await chat.save()
-    }
 
-    // ================= NOTIFY CHAT ROOM =================
-    io.to(chatId).emit("messages_seen", {
-      chatId,
-      userId,
-    })
+      const populated = await newMessage.populate("sender", "name profilePic")
 
-  } catch (err) {
-    console.error(err.message)
-  }
-})
+      io.to(chatId).emit("receive_message", populated)
 
-  // ================= SEND MESSAGE =================
-socket.on("send_message", async (data) => {
-  try {
-    const { chatId, sender, text } = data
-    if (!chatId || !sender || !text) return
-
-    // ================= CREATE MESSAGE =================
-    const newMessage = await Message.create({
-      chatId,
-      sender,
-      text,
-    })
-
-    // ================= FIND CHAT =================
-    const chat = await Chat.findById(chatId)
-    if (!chat) return
-
-    // ================= UPDATE LAST MESSAGE =================
-    chat.lastMessage = text
-    chat.updatedAt = new Date()
-
-    // ================= ENSURE MAP =================
-    if (!chat.unreadCounts) {
-      chat.unreadCounts = new Map()
-    }
-
-    const senderId = sender.toString()
-
-    // ================= INCREMENT UNREAD =================
-    chat.members.forEach((memberId) => {
-      const id = memberId.toString()
-
-      if (id !== senderId) {
-        const current = chat.unreadCounts.get(id) || 0
-        chat.unreadCounts.set(id, current + 1)
-      }
-    })
-
-    await chat.save()
-
-    // ================= POPULATE =================
-    const populated = await newMessage.populate("sender", "name profilePic")
-
-    // ================= EMIT MESSAGE =================
-    io.to(chatId).emit("receive_message", populated)
-
-    // 🔥 OPTIONAL: notify all users in chat list update
-    chat.members.forEach((memberId) => {
-      io.emit(`chat_update_${memberId.toString()}`, {
-        chatId,
-        lastMessage: text,
+      chat.members.forEach((memberId) => {
+        io.emit(`chat_update_${memberId.toString()}`, {
+          chatId,
+          lastMessage: text,
+        })
       })
-    })
 
-  } catch (err) {
-    console.error("SEND MESSAGE ERROR:", err.message)
-  }
-})
-
+    } catch (err) {
+      console.error("SEND MESSAGE ERROR:", err.message)
+    }
+  })
 
   // ================= DISCONNECT =================
   socket.on("disconnect", async () => {
@@ -193,9 +190,7 @@ socket.on("send_message", async (data) => {
   })
 })
 
-
-
-
+// ================= SERVER START =================
 const PORT = process.env.PORT || 5000
 
 server.listen(PORT, () => {
