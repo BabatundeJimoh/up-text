@@ -168,7 +168,7 @@ export default function Dashboard() {
     
     if (!profilePic) return null
     
-    if (profilePic.startsWith('http')) {
+    if (profilePic.startsWith('https')) {
       return profilePic
     }
     

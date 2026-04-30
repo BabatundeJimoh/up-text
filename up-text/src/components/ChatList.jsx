@@ -36,7 +36,7 @@ export default function ChatList({ chats, setSelectedChat, user, users = [], cla
     // Try to get profile pic from member (same logic as ChatWindow)
     if (member?.profilePic) {
       // Check if it already has the full URL or just the path
-      if (member.profilePic.startsWith('http')) {
+      if (member.profilePic.startsWith('https')) {
         return member.profilePic
       }
       // Add localhost prefix if it's a path
@@ -46,7 +46,7 @@ export default function ChatList({ chats, setSelectedChat, user, users = [], cla
     // Try to get from users list (for updated images)
     const freshUser = users.find(u => u._id === member?._id)
     if (freshUser?.profilePic) {
-      if (freshUser.profilePic.startsWith('http')) {
+      if (freshUser.profilePic.startsWith('https')) {
         return freshUser.profilePic
       }
       return `https://up-text-backend.onrender.com${freshUser.profilePic}`
