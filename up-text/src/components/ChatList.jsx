@@ -40,7 +40,7 @@ export default function ChatList({ chats, setSelectedChat, user, users = [], cla
         return member.profilePic
       }
       // Add localhost prefix if it's a path
-      return `http://localhost:5000${member.profilePic}`
+      return `https://up-text-backend.onrender.com${member.profilePic}`
     }
 
     // Try to get from users list (for updated images)
@@ -49,7 +49,7 @@ export default function ChatList({ chats, setSelectedChat, user, users = [], cla
       if (freshUser.profilePic.startsWith('http')) {
         return freshUser.profilePic
       }
-      return `http://localhost:5000${freshUser.profilePic}`
+      return `https://up-text-backend.onrender.com${freshUser.profilePic}`
     }
 
     // Final fallback to DiceBear (same as ChatWindow's fallback)

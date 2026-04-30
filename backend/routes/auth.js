@@ -12,7 +12,7 @@ router.put("/upload-profile/:id", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "No image uploaded" })
     }
 
-    const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`
+    const imageUrl = `https://up-text-backend.onrender.com/uploads/${req.file.filename}`
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,

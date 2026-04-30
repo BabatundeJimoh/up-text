@@ -47,7 +47,7 @@ export default function ChatWindow({
       if (otherUser.profilePic.startsWith('http')) {
         return otherUser.profilePic
       }
-      return `http://localhost:5000${otherUser.profilePic}`
+      return `https://up-text-backend.onrender.com${otherUser.profilePic}`
     }
 
     const seed = otherUser._id || otherUser.name || 'default'

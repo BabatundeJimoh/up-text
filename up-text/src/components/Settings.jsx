@@ -24,7 +24,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
       setLoading(true)
 
       const res = await axios.put(
-        `http://localhost:5000/api/auth/update-profile/${user._id}`,
+        `https://up-text-backend.onrender.com/api/auth/update-profile/${user._id}`,
         { bio, email }
       )
 
@@ -60,7 +60,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
       setLoading(true)
 
       const res = await axios.put(
-        `http://localhost:5000/api/auth/upload-profile/${user._id}`,
+        `https://up-text-backend.onrender.com/api/auth/upload-profile/${user._id}`,
         formData,
         {
           headers: {
@@ -89,7 +89,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
       setLoading(true)
 
       const res = await axios.put(
-        `http://localhost:5000/api/auth/remove-profile/${user._id}`
+        `https://up-text-backend.onrender.com/api/auth/remove-profile/${user._id}`
       )
 
       const updatedUser = res.data.user
@@ -141,7 +141,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
           <img
             src={
               user?.profilePic
-                ? `http://localhost:5000${user.profilePic}`
+                ? `https://up-text-backend.onrender.com${user.profilePic}`
                 : 'https://static.vecteezy.com/system/resources/previews/026/631/405/non_2x/human-icon-symbol-design-illustration-vector.jpg'
             }
             alt="Profile"

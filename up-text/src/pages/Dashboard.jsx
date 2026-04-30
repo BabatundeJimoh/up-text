@@ -13,7 +13,7 @@ import GroupModal from '../components/GroupModal'
 import Settings from '../components/Settings'
 
 
-const socket = io('http://localhost:5000')
+const socket = io('https://your-app.onrender.com')
 
 const sortChats = (list) =>
   [...list].sort(
@@ -104,7 +104,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user?._id) return
 
-    axios.get('http://localhost:5000/api/auth/users')
+    axios.get('https://your-app.onrender.com/api/auth/users')
       .then(res => {
         setUsers(res.data.filter(u => u._id !== user._id))
       })
@@ -115,7 +115,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user?._id) return
 
-    axios.get(`http://localhost:5000/api/chats/${user._id}`)
+    axios.get(`https://your-app.onrender.com/api/chats/${user._id}`)
       .then(res => {
         const formatted = res.data.map(chat => {
           const other = chat.members?.find(m => m._id !== user._id)
@@ -145,7 +145,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!selectedChat?.id) return
 
-    axios.get(`http://localhost:5000/api/messages/${selectedChat.id}`)
+    axios.get(`https://your-app.onrender.com/api/messages/${selectedChat.id}`)
       .then(res => {
         setMessages(res.data)
         if (selectedChat.id) {
@@ -172,7 +172,7 @@ export default function Dashboard() {
       return profilePic
     }
     
-    return `http://localhost:5000${profilePic}`
+    return `https://your-app.onrender.com${profilePic}`
   }
 
   // ================= SOCKET =================
@@ -349,7 +349,7 @@ export default function Dashboard() {
       return
     }
 
-    const res = await axios.post('http://localhost:5000/api/chats', {
+    const res = await axios.post('https://your-app.onrender.com/api/chats', {
       senderId: user._id,
       receiverId: contact._id
     })
@@ -372,7 +372,7 @@ export default function Dashboard() {
   const createGroup = async (name, list) => {
     if (!name || !list.length) return
 
-    const res = await axios.post('http://localhost:5000/api/chats/group', {
+    const res = await axios.post('https://your-app.onrender.com/api/chats/group', {
       name,
       members: [user._id, ...list.map(u => u._id)]
     })

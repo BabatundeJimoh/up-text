@@ -25,7 +25,7 @@ app.get("/", (req, res) => {
 
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: process.env.CLIENT_URL || "https://up-text-backend.onrender.com",
   credentials: true,
 }))
 
@@ -41,7 +41,7 @@ const server = http.createServer(app)
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "https://up-text-backend.onrender.com",
     methods: ["GET", "POST"],
   },
 })
