@@ -2,7 +2,7 @@ import express from "express"
 import dotenv from "dotenv"
 import connectDB from "./config/db.js"
 import cors from "cors"
-import https from "https"
+import http from "http"
 import { Server } from "socket.io"
 import authRoutes from "./routes/auth.js"
 import messageRoutes from "./routes/messages.js"
@@ -45,7 +45,7 @@ app.use("/api/chats", chatRoutes)
 app.use("/api/user", userRoutes)
 
 // ================= HTTP SERVER =================
-const server = https.createServer(app)
+const server = http.createServer(app)
 
 /**
  * ================= SOCKET.IO =================
