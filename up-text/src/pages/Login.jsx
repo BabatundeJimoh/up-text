@@ -51,23 +51,23 @@ function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+         <input
+  type="email"
+  placeholder="Email"
+  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-white"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  required
+/>
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+<input
+  type="password"
+  placeholder="Password"
+  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-white"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  required
+/>
 
           <button
             className="bg-blue-600 hover:bg-blue-700 transition text-white p-3 rounded-lg font-semibold shadow-md"

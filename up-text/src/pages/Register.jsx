@@ -48,32 +48,32 @@ function Register() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+        <input
+  type="text"
+  placeholder="Full Name"
+  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-white placeholder-gray-300"
+  value={name}
+  onChange={(e) => setName(e.target.value)}
+  required
+/>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+<input
+  type="email"
+  placeholder="Email"
+  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-white placeholder-gray-300"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  required
+/>
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+<input
+  type="password"
+  placeholder="Password"
+  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-white placeholder-gray-300"
+  value={password}
+  onChange={(e) => setPassword(e.target.value)}
+  required
+/>
 
           <button
             type="submit"

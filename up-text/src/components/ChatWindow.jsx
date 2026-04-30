@@ -178,14 +178,14 @@ export default function ChatWindow({
 
       {/* ================= INPUT ================= */}
       <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Type a message..."
-          className="flex-1 px-3 py-2 border rounded outline-none focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF]"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-        />
+       <input
+  type="text"
+  placeholder="Type a message..."
+  className="flex-1 px-3 py-2 border rounded outline-none text-gray-900 placeholder-gray-400 focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF]"
+  value={newMessage}
+  onChange={(e) => setNewMessage(e.target.value)}
+  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+/>
 
         <button
           onClick={handleSendMessage}
