@@ -27,6 +27,11 @@ app.get("/", (req, res) => {
  * ================= FIXED CLIENT URL =================
  * ONLY CHANGE: proper frontend URL for production
  */
+const BASE_URL =
+  process.env.BASE_URL || "https://up-text-backend.onrender.com"
+
+
+  
 const CLIENT_URL =
   process.env.CLIENT_URL || "https://up-text-frontend.onrender.com"
 
