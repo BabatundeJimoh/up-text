@@ -1,5 +1,5 @@
 'use client'
-
+import API_BASE_URL from '../config/api'
 import React, { useState } from 'react'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 
@@ -19,10 +19,10 @@ export default function ChatList({
     if (!url) return null
 
     // fix localhost issue
-    if (url.includes('localhost:5000')) {
+    if (url.includes('localhost:5001')) {
       return url.replace(
-        'http://localhost:5000',
-        'https://up-text-backend.onrender.com'
+        'http://localhost:5001',
+        '${API_BASE_URL}'
       )
     }
 

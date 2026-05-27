@@ -1,44 +1,45 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
+import API_BASE_URL from "../config/api"
 
 function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     try {
-      const res = await fetch("https://up-text-backend.onrender.com/api/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!res.ok) {
-        alert(data.message);
-        return;
+        alert(data.message || "Login failed")
+        return
       }
 
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user))
+      localStorage.setItem("token", data.token)
 
-      navigate("/dashboard");
+      navigate("/dashboard")
     } catch (error) {
-      console.error(error);
-      alert("Server error");
+      console.error(error)
+      alert("Server error")
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center  px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-100">
       <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl">
-        
+
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800">
@@ -51,23 +52,24 @@ function Login() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-         <input
-  type="email"
-  placeholder="Email"
-  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-white"
-  value={email}
-  onChange={(e) => setEmail(e.target.value)}
-  required
-/>
 
-<input
-  type="password"
-  placeholder="Password"
-  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-white"
-  value={password}
-  onChange={(e) => setPassword(e.target.value)}
-  required
-/>
+          <input
+            type="email"
+            placeholder="Email"
+            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-800"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-800"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
           <button
             className="bg-blue-600 hover:bg-blue-700 transition text-white p-3 rounded-lg font-semibold shadow-md"
@@ -88,7 +90,7 @@ function Login() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default Login;
+export default Login

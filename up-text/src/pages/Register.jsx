@@ -1,41 +1,44 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
+import API_BASE_URL from "../config/api"
 
 function Register() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     try {
-      const res = await fetch("https://up-text-backend.onrender.com/api/auth/register", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!res.ok) {
-        alert(data.message || "Registration failed");
-        return;
+        alert(data.message || "Registration failed")
+        return
       }
 
-      localStorage.setItem("user", JSON.stringify(data));
-      navigate("/dashboard");
+      localStorage.setItem("user", JSON.stringify(data.user))
+      localStorage.setItem("token", data.token)
+
+      navigate("/dashboard")
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong, please try again.");
+      console.error(err)
+      alert("Something went wrong, please try again.")
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center  px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-100">
       <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl">
-        
+
         {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800">
@@ -48,32 +51,33 @@ function Register() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-  type="text"
-  placeholder="Full Name"
-  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-white placeholder-gray-300"
-  value={name}
-  onChange={(e) => setName(e.target.value)}
-  required
-/>
 
-<input
-  type="email"
-  placeholder="Email"
-  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-white placeholder-gray-300"
-  value={email}
-  onChange={(e) => setEmail(e.target.value)}
-  required
-/>
+          <input
+            type="text"
+            placeholder="Full Name"
+            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-gray-800 placeholder-gray-400"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
 
-<input
-  type="password"
-  placeholder="Password"
-  className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-white placeholder-gray-300"
-  value={password}
-  onChange={(e) => setPassword(e.target.value)}
-  required
-/>
+          <input
+            type="email"
+            placeholder="Email"
+            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-gray-800 placeholder-gray-400"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-gray-800 placeholder-gray-400"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
           <button
             type="submit"
@@ -95,7 +99,7 @@ function Register() {
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default Register;
+export default Register

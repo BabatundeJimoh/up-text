@@ -11,9 +11,12 @@ import ChatWindow from '../components/ChatWindow'
 import AddContactModal from '../components/AddContactModal'
 import GroupModal from '../components/GroupModal'
 import Settings from '../components/Settings'
+import FloatingChat from '../components/FloatingChat'
+import API_BASE_URL from '../config/api'
 
 
-const socket = io('https://up-text-backend.onrender.com')
+
+const socket = io(API_BASE_URL)
 
 const sortChats = (list) =>
   [...list].sort(
@@ -104,7 +107,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user?._id) return
 
-    axios.get('https://up-text-backend.onrender.com/api/auth/users')
+    axios.get(`${API_BASE_URL}/api/auth/users`)
       .then(res => {
         setUsers(res.data.filter(u => u._id !== user._id))
       })
@@ -115,7 +118,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user?._id) return
 
-    axios.get(`https://up-text-backend.onrender.com/api/chats/${user._id}`)
+    axios.get(`${API_BASE_URL}/api/chats/${user._id}`)
       .then(res => {
         const formatted = res.data.map(chat => {
           const other = chat.members?.find(m => m._id !== user._id)
@@ -145,7 +148,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!selectedChat?.id) return
 
-    axios.get(`https://up-text-backend.onrender.com/api/messages/${selectedChat.id}`)
+    axios.get(`${API_BASE_URL}/api/messages/${selectedChat.id}`)
       .then(res => {
         setMessages(res.data)
         if (selectedChat.id) {
@@ -172,7 +175,7 @@ export default function Dashboard() {
       return profilePic
     }
     
-    return `https://up-text-backend.onrender.com${profilePic}`
+    return `${API_BASE_URL}${profilePic}`
   }
 
   // ================= SOCKET =================
@@ -349,7 +352,7 @@ export default function Dashboard() {
       return
     }
 
-    const res = await axios.post('https://up-text-backend.onrender.com/api/chats', {
+    const res = await axios.post(`${API_BASE_URL}/api/chats`, {
       senderId: user._id,
       receiverId: contact._id
     })
@@ -372,7 +375,7 @@ export default function Dashboard() {
   const createGroup = async (name, list) => {
     if (!name || !list.length) return
 
-    const res = await axios.post('https://up-text-backend.onrender.com/api/chats/group', {
+    const res = await axios.post(`${API_BASE_URL}/api/chats/group`, {
       name,
       members: [user._id, ...list.map(u => u._id)]
     })
@@ -464,6 +467,9 @@ export default function Dashboard() {
         </Routes>
 
       </main>
+
+{user && <FloatingChat />}
+
 
       {showModal && (
         <AddContactModal

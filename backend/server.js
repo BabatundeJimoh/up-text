@@ -4,62 +4,63 @@ import connectDB from "./config/db.js"
 import cors from "cors"
 import http from "http"
 import { Server } from "socket.io"
+
 import authRoutes from "./routes/auth.js"
 import messageRoutes from "./routes/messages.js"
 import chatRoutes from "./routes/chat.js"
+import userRoutes from "./routes/user.js"
+import scheduleRoutes from "./routes/schedule.js"
+
 import Message from "./models/Message.js"
 import Chat from "./models/Chat.js"
 import User from "./models/User.js"
-import path from "path"
-import userRoutes from "./routes/user.js"
 
+import path from "path"
+
+import agenda from "./config/agenda.js"
+import { defineScheduledMessage } from "./jobs/scheduledMessage.js"
+
+// ================= ENV FIRST =================
 dotenv.config()
-connectDB()
 
 const app = express()
 
 // ================= ROOT ROUTE =================
 app.get("/", (req, res) => {
-  res.send("API is running 🚀");
+  res.send("API is running 🚀")
 })
 
-/**
- * ================= FIXED CLIENT URL =================
- * ONLY CHANGE: proper frontend URL for production
- */
-const BASE_URL =
-  process.env.BASE_URL || "https://up-text-backend.onrender.com"
+// ================= CLIENT URLS =================
+const CLIENT_URLS = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://up-text-frontend.onrender.com"
+]
 
-
-  
-const CLIENT_URL =
-  process.env.CLIENT_URL || "https://up-text-frontend.onrender.com"
-
-// ================= CORS (EXPRESS) =================
+// ================= CORS =================
 app.use(cors({
-  origin: CLIENT_URL,
+  origin: CLIENT_URLS,
   credentials: true,
 }))
 
 app.use(express.json())
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")))
 
+// ================= ROUTES =================
 app.use("/api/auth", authRoutes)
 app.use("/api/messages", messageRoutes)
 app.use("/api/chats", chatRoutes)
 app.use("/api/user", userRoutes)
+app.use("/api/schedule", scheduleRoutes)
 
-// ================= HTTP SERVER =================
+// ================= SOCKET.IO =================
 const server = http.createServer(app)
 
-/**
- * ================= SOCKET.IO =================
- * FIXED: correct frontend origin for socket connection
- */
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL,
+    origin: CLIENT_URLS,
     methods: ["GET", "POST"],
+    credentials: true,
   },
 })
 
@@ -68,7 +69,6 @@ const onlineUsers = new Map()
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id)
 
-  // ================= ONLINE =================
   socket.on("user_online", async (userId) => {
     if (!userId) return
 
@@ -85,13 +85,11 @@ io.on("connection", (socket) => {
     }
   })
 
-  // ================= JOIN CHAT =================
   socket.on("join_chat", (chatId) => {
     if (!chatId) return
     socket.join(chatId)
   })
 
-  // ================= MARK SEEN =================
   socket.on("mark_seen", async ({ chatId, userId }) => {
     try {
       await Message.updateMany(
@@ -123,7 +121,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  // ================= SEND MESSAGE =================
   socket.on("send_message", async (data) => {
     try {
       const { chatId, sender, text } = data
@@ -174,7 +171,6 @@ io.on("connection", (socket) => {
     }
   })
 
-  // ================= DISCONNECT =================
   socket.on("disconnect", async () => {
     try {
       for (let [userId, socketId] of onlineUsers.entries()) {
@@ -195,9 +191,25 @@ io.on("connection", (socket) => {
   })
 })
 
-// ================= SERVER START =================
-const PORT = process.env.PORT || 5000
+// ================= AGENDA SAFE START (FIX ONLY HERE) =================
+const startServer = async () => {
+  try {
+    await connectDB()
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+    defineScheduledMessage(agenda)
+
+    await agenda.start()
+    console.log("Agenda started")
+
+    const PORT = process.env.PORT || 5001
+
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`)
+    })
+
+  } catch (err) {
+    console.error("SERVER START ERROR:", err)
+  }
+}
+
+startServer()

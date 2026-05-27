@@ -1,5 +1,5 @@
 'use client'
-
+import API_BASE_URL from '../config/api'
 import React, { useEffect, useMemo, useState } from 'react'
 import socket from '../socket'
 
@@ -34,39 +34,48 @@ export default function ChatWindow({
     return selectedChat.members.find(m => m._id !== user._id)
   }, [selectedChat, user])
 
-  // ================= GET PROFILE PICTURE =================
+  const normalizeBase = API_BASE_URL?.replace(/\/$/, "")
+
+  // ================= GET PROFILE PICTURE (FIXED) =================
   const getProfilePic = () => {
-    if (!otherUser) return "https://i.pravatar.cc/150?img=3"
-    
+    if (!otherUser) {
+      return "https://i.pravatar.cc/150?img=3"
+    }
+
+    const pic = otherUser.profilePic
+
+    // fallback if image failed
     if (imageError) {
       const seed = otherUser._id || otherUser.name || 'default'
       return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
     }
 
-    if (otherUser.profilePic) {
-      if (otherUser.profilePic.startsWith('http')) {
-        return otherUser.profilePic
-      }
-      return `https://up-text-backend.onrender.com${otherUser.profilePic}`
+    // real image
+    if (pic) {
+      if (pic.startsWith('http')) return pic
+      return `${normalizeBase}${pic}`
     }
 
+    // default avatar
     const seed = otherUser._id || otherUser.name || 'default'
     return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
   }
 
-  const handleImageError = () => {
+  // ================= IMAGE ERROR HANDLER (FIXED) =================
+  const handleImageError = (e) => {
+    e.target.onerror = null
     setImageError(true)
   }
 
   return (
     <section className={`flex-1 max-w-3xl mx-auto flex flex-col justify-between bg-[#F5F7FB] text-black p-4 relative ${className}`}>
+
       {/* ================= HEADER ================= */}
       <div className="flex items-center justify-between mb-4 p-3 rounded-lg w-full bg-white">
 
         {/* LEFT */}
         <div className="flex items-center gap-3">
 
-          {/* BACK BUTTON (MOBILE ONLY) */}
           <button
             className="md:hidden text-2xl mr-1"
             onClick={() => setMobileView("list")}
@@ -79,14 +88,12 @@ export default function ChatWindow({
               src={getProfilePic()}
               alt="User"
               className="w-12 h-12 rounded-full object-cover bg-gray-200"
-              onError={handleImageError}
+              onError={(e) => handleImageError(e)}
             />
 
             <span
               className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
-                otherUser?.lastSeen === null
-                  ? "bg-green-500"
-                  : "bg-gray-400"
+                otherUser?.lastSeen === null ? "bg-green-500" : "bg-gray-400"
               }`}
             />
           </div>
@@ -114,7 +121,6 @@ export default function ChatWindow({
 
         </div>
 
-        {/* RIGHT */}
         <button
           className="md:hidden text-2xl"
           onClick={() => setShowSidebar(true)}
@@ -134,7 +140,9 @@ export default function ChatWindow({
         )}
 
         {messages.map((msg, idx) => {
-          const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender
+          const senderId =
+            typeof msg.sender === 'object' ? msg.sender._id : msg.sender
+
           const isSender = senderId === user?._id
 
           return (
@@ -178,14 +186,14 @@ export default function ChatWindow({
 
       {/* ================= INPUT ================= */}
       <div className="flex gap-2">
-       <input
-  type="text"
-  placeholder="Type a message..."
-  className="flex-1 px-3 py-2 border rounded outline-none text-gray-900 placeholder-gray-400 focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF]"
-  value={newMessage}
-  onChange={(e) => setNewMessage(e.target.value)}
-  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-/>
+        <input
+          type="text"
+          placeholder="Type a message..."
+          className="flex-1 px-3 py-2 border rounded outline-none text-gray-900 placeholder-gray-400 focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF]"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+        />
 
         <button
           onClick={handleSendMessage}
@@ -194,6 +202,7 @@ export default function ChatWindow({
           Send
         </button>
       </div>
+
     </section>
   )
 }

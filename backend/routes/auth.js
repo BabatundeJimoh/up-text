@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { upload } from "../config/uploads.js";
+import API_BASE_URL from "../../up-text/src/config/api.js";
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ router.put("/upload-profile/:id", upload.single("image"), async (req, res) => {
       return res.status(400).json({ message: "No image uploaded" })
     }
 
-    const imageUrl = `https://up-text-backend.onrender.com/uploads/${req.file.filename}`
+    const imageUrl = `${API_BASE_URL}/uploads/${req.file.filename}`
 
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,

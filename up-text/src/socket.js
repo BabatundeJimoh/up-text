@@ -1,5 +1,8 @@
+import API_BASE_URL from "./config/api"
 import { io } from "socket.io-client"
 
-const socket = io("https://up-text-backend.onrender.com")
+const socket = io(API_BASE_URL, {
+  transports: ["websocket", "polling"],
+})
 
 export default socket

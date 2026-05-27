@@ -1,11 +1,11 @@
 'use client'
+import API_BASE_URL from '../config/api'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 
 export default function Settings({ user, setUser, setShowSidebar }) {
 
   const [loading, setLoading] = useState(false)
-
   const [bio, setBio] = useState('')
   const [email, setEmail] = useState('')
 
@@ -18,28 +18,43 @@ export default function Settings({ user, setUser, setShowSidebar }) {
 
   if (!user) return <div className="p-5">Loading...</div>
 
+  // ================= BASE URL CLEAN =================
+  const baseURL = API_BASE_URL?.replace(/\/$/, '')
+
+  // ================= PROFILE IMAGE FIX =================
+  const getProfileImage = () => {
+    if (!user?.profilePic) {
+      return 'https://static.vecteezy.com/system/resources/previews/026/631/405/non_2x/human-icon-symbol-design-illustration-vector.jpg'
+    }
+
+    if (user.profilePic.startsWith('http')) {
+      return user.profilePic
+    }
+
+    return `${baseURL}${user.profilePic.startsWith('/') ? '' : '/'}${user.profilePic}`
+  }
+
   // ================= SAVE PROFILE =================
   const handleSave = async () => {
     try {
       setLoading(true)
 
       const res = await axios.put(
-        `https://up-text-backend.onrender.com/api/auth/update-profile/${user._id}`,
+        `${API_BASE_URL}/api/auth/update-profile/${user._id}`,
         { bio, email }
       )
 
       const updatedUser = res.data.user
 
       localStorage.setItem("user", JSON.stringify(updatedUser))
-      if (setUser) setUser(updatedUser)
+      setUser?.(updatedUser)
 
       alert("Profile updated!")
-      setLoading(false)
-
     } catch (err) {
-      setLoading(false)
       console.error(err)
       alert(err.response?.data?.message || err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -60,7 +75,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
       setLoading(true)
 
       const res = await axios.put(
-        `https://up-text-backend.onrender.com/api/auth/upload-profile/${user._id}`,
+        `${API_BASE_URL}/api/auth/upload-profile/${user._id}`,
         formData,
         {
           headers: {
@@ -72,14 +87,13 @@ export default function Settings({ user, setUser, setShowSidebar }) {
       const updatedUser = res.data.user
 
       localStorage.setItem("user", JSON.stringify(updatedUser))
-      if (setUser) setUser(updatedUser)
-
-      setLoading(false)
+      setUser?.(updatedUser)
 
     } catch (err) {
-      setLoading(false)
       console.error(err)
       alert(err.response?.data?.message || err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -89,20 +103,19 @@ export default function Settings({ user, setUser, setShowSidebar }) {
       setLoading(true)
 
       const res = await axios.put(
-        `https://up-text-backend.onrender.com/api/auth/remove-profile/${user._id}`
+        `${API_BASE_URL}/api/auth/remove-profile/${user._id}`
       )
 
       const updatedUser = res.data.user
 
       localStorage.setItem("user", JSON.stringify(updatedUser))
-      if (setUser) setUser(updatedUser)
-
-      setLoading(false)
+      setUser?.(updatedUser)
 
     } catch (err) {
-      setLoading(false)
       console.error(err)
       alert(err.response?.data?.message || err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -115,14 +128,12 @@ export default function Settings({ user, setUser, setShowSidebar }) {
           Settings
         </h1>
 
-        {/* MOBILE MENU BUTTON */}
         <button
           className="md:hidden text-2xl"
           onClick={() => setShowSidebar(true)}
         >
           ☰
         </button>
-        
       </div>
 
       {/* PROFILE */}
@@ -132,23 +143,19 @@ export default function Settings({ user, setUser, setShowSidebar }) {
           Profile
         </h2>
 
-        <p className="text-gray-500 mb-4">
-          Update your profile and personal details here
-        </p>
-
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
 
           <img
-            src={
-              user?.profilePic
-                ? `https://up-text-backend.onrender.com${user.profilePic}`
-                : 'https://static.vecteezy.com/system/resources/previews/026/631/405/non_2x/human-icon-symbol-design-illustration-vector.jpg'
-            }
+            src={getProfileImage()}
             alt="Profile"
             className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover border"
+            onError={(e) => {
+              e.target.src =
+                'https://static.vecteezy.com/system/resources/previews/026/631/405/non_2x/human-icon-symbol-design-illustration-vector.jpg'
+            }}
           />
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex gap-3">
 
             <input
               type="file"
@@ -159,7 +166,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
 
             <button
               onClick={() => document.getElementById("fileUpload").click()}
-              className="bg-[#7B61FF] text-white px-4 py-2 rounded-lg w-full sm:w-auto"
+              className="bg-[#7B61FF] text-white px-4 py-2 rounded-lg"
               disabled={loading}
             >
               {loading ? "Uploading..." : "Update Picture"}
@@ -167,7 +174,7 @@ export default function Settings({ user, setUser, setShowSidebar }) {
 
             <button
               onClick={handleRemove}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg w-full sm:w-auto"
+              className="bg-red-500 text-white px-4 py-2 rounded-lg"
               disabled={loading}
             >
               Remove
@@ -188,7 +195,6 @@ export default function Settings({ user, setUser, setShowSidebar }) {
           rows="3"
           value={bio}
           onChange={(e) => setBio(e.target.value)}
-          placeholder="Tell people about yourself..."
           className="w-full border rounded-lg px-3 py-2"
         />
       </div>
@@ -207,28 +213,26 @@ export default function Settings({ user, setUser, setShowSidebar }) {
           className="w-full border rounded-lg px-3 py-2 mb-4"
         />
 
-        <button className="bg-[#7B61FF] text-white px-5 py-3 rounded-lg w-full sm:w-auto">
-          Change Password
-        </button>
       </div>
 
       {/* ACTIONS */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex gap-3">
 
-        <button
+        <button 
           onClick={handleSave}
-          className="bg-[#7B61FF] text-white px-6 py-3 rounded-lg w-full sm:w-auto"
+          className="bg-[#7B61FF] text-white px-6 py-3 rounded-lg"
           disabled={loading}
         >
           {loading ? "Saving..." : "Save Changes"}
+          
         </button>
 
         <button
           onClick={() => {
             localStorage.removeItem("user")
-            window.location.href = "/login"
+            window.location.href = "/"
           }}
-          className="bg-red-500 text-white px-6 py-3 rounded-lg w-full sm:w-auto"
+          className="bg-red-500 text-white px-6 py-3 rounded-lg"
         >
           Logout
         </button>
