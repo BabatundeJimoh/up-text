@@ -1,101 +1,164 @@
 'use client'
+
 import React, { useState, useRef } from "react"
 import API_BASE_URL from "../config/api"
 
-export default function FloatingChat() {
+export default function FloatingChat({ user, selectedChat, socket }) {
   const [open, setOpen] = useState(false)
   const [isSchedule, setIsSchedule] = useState(false)
   const [time, setTime] = useState("")
   const [message, setMessage] = useState("")
+  const [messages, setMessages] = useState([])
 
-  // drag state
+  // ================= DRAG STATE (BUTTON + WINDOW) =================
+  const buttonRef = useRef(null)
   const boxRef = useRef(null)
-  const pos = useRef({ x: 0, y: 0, relX: 0, relY: 0, dragging: false })
 
-  const onMouseDown = (e) => {
-    pos.current.dragging = true
-    const rect = boxRef.current.getBoundingClientRect()
+  const dragState = useRef({
+    dragging: false,
+    offsetX: 0,
+    offsetY: 0,
+    target: null
+  })
 
-    pos.current.relX = e.clientX - rect.left
-    pos.current.relY = e.clientY - rect.top
+  const startDrag = (e, target) => {
+    const el = target
+    const rect = el.getBoundingClientRect()
 
-    document.addEventListener("mousemove", onMouseMove)
-    document.addEventListener("mouseup", onMouseUp)
+    dragState.current.dragging = true
+    dragState.current.target = el
+    dragState.current.offsetX = e.clientX - rect.left
+    dragState.current.offsetY = e.clientY - rect.top
+
+    el.style.position = "fixed"
+    el.style.zIndex = 9999
   }
 
-  const onMouseMove = (e) => {
-    if (!pos.current.dragging) return
+  const moveDrag = (e) => {
+    if (!dragState.current.dragging || !dragState.current.target) return
 
-    const x = e.clientX - pos.current.relX
-    const y = e.clientY - pos.current.relY
+    const x = e.clientX - dragState.current.offsetX
+    const y = e.clientY - dragState.current.offsetY
 
-    boxRef.current.style.left = `${x}px`
-    boxRef.current.style.top = `${y}px`
+    dragState.current.target.style.left = `${x}px`
+    dragState.current.target.style.top = `${y}px`
+    dragState.current.target.style.right = "auto"
+    dragState.current.target.style.bottom = "auto"
   }
 
-  const onMouseUp = () => {
-    pos.current.dragging = false
-    document.removeEventListener("mousemove", onMouseMove)
-    document.removeEventListener("mouseup", onMouseUp)
+  const stopDrag = () => {
+    dragState.current.dragging = false
+    dragState.current.target = null
   }
 
-  const handleSend = async () => {
-    if (!message.trim()) return
+  // ================= POINTER EVENTS (WORKS ON ALL DEVICES) =================
+  const onPointerDown = (e, target) => {
+    e.preventDefault()
+    startDrag(e, target)
 
-    if (!isSchedule) {
-      console.log("Send immediately:", message)
-      setMessage("")
-      return
+    window.addEventListener("pointermove", onPointerMove)
+    window.addEventListener("pointerup", onPointerUp)
+  }
+
+  const onPointerMove = (e) => moveDrag(e)
+
+  const onPointerUp = () => {
+    stopDrag()
+    window.removeEventListener("pointermove", onPointerMove)
+    window.removeEventListener("pointerup", onPointerUp)
+  }
+
+  // ================= SEND =================
+  const handleSend = () => {
+    if (!message.trim() || !selectedChat?.id || !user?._id) return
+
+    const msg = {
+      chatId: selectedChat.id,
+      sender: user._id,
+      text: message,
+      createdAt: new Date().toISOString()
     }
 
-    if (!time) {
-      alert("Pick a time")
-      return
-    }
+    setMessages(prev => [...prev, { sender: "me", text: message }])
+
+    socket.emit("send_message", msg)
+
+    setMessage("")
+  }
+
+  // ================= SCHEDULE =================
+  const handleSchedule = async () => {
+    if (!message.trim() || !time || !selectedChat?.id || !user?._id) return
 
     try {
       await fetch(`${API_BASE_URL}/api/schedule/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chatId: "ai-chat",
-          sender: "ai-user",
+          chatId: selectedChat.id,
+          sender: user._id,
           text: message,
           sendAt: time,
         }),
       })
 
       alert("Message scheduled!")
+
       setMessage("")
       setTime("")
       setIsSchedule(false)
+
     } catch (err) {
       console.error(err)
-      alert("Failed to schedule")
+      alert("Failed to schedule message")
     }
   }
 
   return (
     <>
-      {/* CHAT WINDOW */}
+      {/* ================= FLOATING BUTTON (NOW DRAGGABLE) ================= */}
+      <button
+        ref={buttonRef}
+        onPointerDown={(e) => onPointerDown(e, buttonRef.current)}
+        onClick={() => setOpen(prev => !prev)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-[#7B61FF] text-white rounded-full shadow-lg text-2xl z-50 touch-none"
+      >
+        💬
+      </button>
+
+      {/* ================= CHAT WINDOW ================= */}
       {open && (
         <div
           ref={boxRef}
-          style={{ position: "fixed", bottom: 100, right: 20 }}
           className="w-80 h-[450px] bg-white shadow-2xl rounded-2xl flex flex-col overflow-hidden z-50"
+          style={{ position: "fixed", bottom: 100, right: 20 }}
         >
-          {/* HEADER (DRAG HANDLE) */}
+          {/* HEADER (DRAGGABLE) */}
           <div
-            onMouseDown={onMouseDown}
-            className="bg-[#7B61FF] text-white p-3 flex justify-between items-center cursor-move"
+            onPointerDown={(e) => onPointerDown(e, boxRef.current)}
+            className="bg-[#7B61FF] text-white p-3 flex justify-between items-center cursor-move touch-none"
           >
-            <p className="font-semibold">Chat AI</p>
+            <p className="font-semibold">
+              Chat {selectedChat ? `- ${selectedChat.name}` : ""}
+            </p>
+
             <button onClick={() => setOpen(false)}>✕</button>
           </div>
 
-          {/* BODY */}
-          <div className="flex-1 p-3 overflow-y-auto text-sm text-gray-600">
-            👋 Hello! I can chat or schedule messages for you.
+          {/* MESSAGES */}
+          <div className="flex-1 p-3 overflow-y-auto text-sm space-y-2">
+            {messages.map((msg, i) => (
+              <div
+                key={i}
+                className={`p-2 rounded-lg max-w-[80%] ${
+                  msg.sender === "me"
+                    ? "bg-purple-500 text-white ml-auto"
+                    : "bg-gray-200 text-black"
+                }`}
+              >
+                {msg.text}
+              </div>
+            ))}
           </div>
 
           {/* SCHEDULE */}
@@ -129,7 +192,7 @@ export default function FloatingChat() {
             />
 
             <button
-              onClick={handleSend}
+              onClick={isSchedule ? handleSchedule : handleSend}
               className="bg-[#7B61FF] text-white px-3 rounded"
             >
               {isSchedule ? "Schedule" : "Send"}
@@ -137,14 +200,6 @@ export default function FloatingChat() {
           </div>
         </div>
       )}
-
-      {/* FLOATING BUTTON */}
-      <button
-        onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-[#7B61FF] text-white rounded-full shadow-lg text-2xl z-50"
-      >
-        💬
-      </button>
     </>
   )
 }

@@ -4,8 +4,8 @@ import User from "./models/User.js"
 
 dotenv.config()
 
-const OLD_URL = "http://localhost:5001"
-const NEW_URL = process.env.BASE_URL // ✅ FIX
+const OLD_URL = "http://localhost:5000"
+const NEW_URL = process.env.BASE_URL || "http://localhost:5001"
 
 const fixImages = async () => {
   try {
@@ -18,7 +18,7 @@ const fixImages = async () => {
     })
 
     for (const user of users) {
-      user.profilePic = user.profilePic.replace(OLD_URL, NEW_URL)
+      user.profilePic = user.profilePic.replaceAll(OLD_URL, NEW_URL)
       await user.save()
       console.log(`Fixed user: ${user._id}`)
     }

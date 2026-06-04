@@ -1,44 +1,49 @@
-import express from "express";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
-import { upload } from "../config/uploads.js";
-import API_BASE_URL from "../../up-text/src/config/api.js";
+import express from "express"
+import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
+import User from "../models/User.js"
+import Chat from "../models/Chat.js"
+import upload from "../config/multerCloud.js"
+
 
 const router = express.Router();
 
-router.put("/upload-profile/:id", upload.single("image"), async (req, res) => {
+router.put("/upload-profile/:id", (req, res, next) => {
+  upload.single("image")(req, res, (err) => {
+    if (err) {
+      console.error("MULTER ERROR:", err)
+      return res.status(500).json({
+        message: err.message,
+        error: err,
+      })
+    }
+
+    next()
+  })
+}, async (req, res) => {
   try {
+    console.log("========== UPLOAD ==========")
+    console.log("FILE:", req.file)
+
     if (!req.file) {
       return res.status(400).json({ message: "No image uploaded" })
     }
 
-    const imageUrl = `${API_BASE_URL}/uploads/${req.file.filename}`
-
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,
-      { profilePic: imageUrl },
-      {
-        returnDocument: "after", // ✅ FIXED
-        runValidators: true,     // ✅ BEST PRACTICE
-      }
+      { profilePic: req.file.path },
+      { returnDocument: "after" }
     )
 
-    // ✅ CONSISTENT RESPONSE (IMPORTANT)
-    res.status(200).json({
-      user: {
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        profilePic: updatedUser.profilePic,
-      }
-    })
-
+    res.json({ user: updatedUser })
   } catch (err) {
-    console.error(err)
+    console.error("UPLOAD ERROR:", err)
     res.status(500).json({ message: err.message })
   }
 })
+
+
+
 
 // ====================== REGISTER ======================
 router.post("/register", async (req, res) => {

@@ -18,13 +18,12 @@ export default function ChatList({
   const normalizeUrl = (url) => {
     if (!url) return null
 
-    // fix localhost issue
-    if (url.includes('localhost:5001')) {
-      return url.replace(
-        'http://localhost:5001',
-        '${API_BASE_URL}'
-      )
-    }
+ if (url.includes('localhost:5001')) {
+  return url.replace(
+    'http://localhost:5001',
+    `${API_BASE_URL}`
+  )
+}
 
     return url
   }

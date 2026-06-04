@@ -8,6 +8,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { NavLink } from 'react-router-dom'
+import API_BASE_URL from '../config/api'
 
 export default function SideBar({
   setShowModal,
@@ -18,20 +19,32 @@ export default function SideBar({
 }) {
 
   const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 p-2 rounded hover:bg-gray-700 ${
+    `flex items-center gap-3 p-2 rounded hover ${
       isActive ? 'text-yellow-400' : 'text-white'
     }`
 
-  // ✅ SAFE FUNCTION (prevents crash)
   const closeSidebar = () => {
     if (typeof setShowSidebar === 'function') {
       setShowSidebar(false)
     }
   }
 
+  // ✅ FIXED PROFILE IMAGE LOGIC
+  const getProfileImage = () => {
+    if (!user?.profilePic) {
+      return "https://i.pravatar.cc/150?img=3"
+    }
+
+    if (user.profilePic.startsWith("http")) {
+      return user.profilePic
+    }
+
+    return `${API_BASE_URL.replace(/\/$/, "")}${user.profilePic.startsWith('/') ? '' : '/'}${user.profilePic}`
+  }
+
   return (
     <>
-      {/* BACKDROP (mobile only) */}
+      {/* BACKDROP */}
       {showSidebar && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -51,7 +64,7 @@ export default function SideBar({
         `}
       >
 
-        {/* CLOSE BUTTON (mobile only) */}
+        {/* CLOSE BUTTON */}
         <div className="md:hidden flex justify-end">
           <button onClick={closeSidebar}>
             <XMarkIcon className="w-6 h-6 text-white" />
@@ -61,13 +74,16 @@ export default function SideBar({
         {/* PROFILE */}
         <div className="flex justify-center py-5">
           <img
-            className="rounded-full w-20 h-20 object-cover"
-            src={user?.profilePic || "https://i.pravatar.cc/150?img=3"}
+            className="rounded-full w-20 h-20 object-cover border border-white/30"
+            src={getProfileImage()}
             alt="Profile"
+            onError={(e) => {
+              e.target.src = "https://i.pravatar.cc/150?img=3"
+            }}
           />
         </div>
 
-        <p className="text-center mb-7 font-semibold text-white ">
+        <p className="text-center mb-7 font-semibold text-white">
           {user?.name || 'Guest User'}
         </p>
 
@@ -86,10 +102,10 @@ export default function SideBar({
 
           <li
             onClick={() => {
-              setShowModal?.(true)   // ✅ SAFE CALL
+              setShowModal?.(true)
               closeSidebar()
             }}
-            className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
+            className="flex items-center gap-3 hover p-2 rounded cursor-pointer"
           >
             <UserGroupIcon className="w-5 h-5 text-white" />
             <p className="text-white">Add Contact</p>
@@ -97,12 +113,12 @@ export default function SideBar({
 
           <li
             onClick={() => {
-              setShowGroupModal?.(true)  // ✅ SAFE CALL
+              setShowGroupModal?.(true)
               closeSidebar()
             }}
-            className="flex items-center gap-3 hover:bg-gray-700 p-2 rounded cursor-pointer"
+            className="flex items-center gap-3 hover p-2 rounded cursor-pointer"
           >
-            <UserGroupIcon className="w-5 h-5 text-white  " />
+            <UserGroupIcon className="w-5 h-5 text-white" />
             <p className="text-white">Create Group</p>
           </li>
 

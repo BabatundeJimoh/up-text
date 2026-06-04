@@ -15,15 +15,17 @@ import Message from "./models/Message.js"
 import Chat from "./models/Chat.js"
 import User from "./models/User.js"
 
-import path from "path"
-
 import agenda from "./config/agenda.js"
-import { defineScheduledMessage } from "./jobs/scheduledMessage.js"
+import { defineScheduledMessage } from "./config/jobs/scheduledMessage.js"
 
-// ================= ENV FIRST =================
+// ================= ENV =================
 dotenv.config()
 
 const app = express()
+
+// ================= MIDDLEWARE =================
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
 // ================= ROOT ROUTE =================
 app.get("/", (req, res) => {
@@ -38,13 +40,12 @@ const CLIENT_URLS = [
 ]
 
 // ================= CORS =================
-app.use(cors({
-  origin: CLIENT_URLS,
-  credentials: true,
-}))
-
-app.use(express.json())
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")))
+app.use(
+  cors({
+    origin: CLIENT_URLS,
+    credentials: true,
+  })
+)
 
 // ================= ROUTES =================
 app.use("/api/auth", authRoutes)
@@ -53,7 +54,7 @@ app.use("/api/chats", chatRoutes)
 app.use("/api/user", userRoutes)
 app.use("/api/schedule", scheduleRoutes)
 
-// ================= SOCKET.IO =================
+// ================= HTTP + SOCKET =================
 const server = http.createServer(app)
 
 const io = new Server(server, {
@@ -64,8 +65,10 @@ const io = new Server(server, {
   },
 })
 
+// ================= ONLINE USERS =================
 const onlineUsers = new Map()
 
+// ================= SOCKET LOGIC =================
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id)
 
@@ -123,7 +126,7 @@ io.on("connection", (socket) => {
 
   socket.on("send_message", async (data) => {
     try {
-      const { chatId, sender, text } = data
+      const { chatId, sender, text } = data || {}
       if (!chatId || !sender || !text) return
 
       const newMessage = await Message.create({
@@ -155,7 +158,10 @@ io.on("connection", (socket) => {
 
       await chat.save()
 
-      const populated = await newMessage.populate("sender", "name profilePic")
+      const populated = await newMessage.populate(
+        "sender",
+        "name profilePic"
+      )
 
       io.to(chatId).emit("receive_message", populated)
 
@@ -165,7 +171,6 @@ io.on("connection", (socket) => {
           lastMessage: text,
         })
       })
-
     } catch (err) {
       console.error("SEND MESSAGE ERROR:", err.message)
     }
@@ -191,14 +196,13 @@ io.on("connection", (socket) => {
   })
 })
 
-// ================= AGENDA SAFE START (FIX ONLY HERE) =================
+// ================= SERVER START =================
 const startServer = async () => {
   try {
     await connectDB()
 
-    defineScheduledMessage(agenda)
-
     await agenda.start()
+    defineScheduledMessage(agenda, io)
     console.log("Agenda started")
 
     const PORT = process.env.PORT || 5001
@@ -206,7 +210,6 @@ const startServer = async () => {
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`)
     })
-
   } catch (err) {
     console.error("SERVER START ERROR:", err)
   }

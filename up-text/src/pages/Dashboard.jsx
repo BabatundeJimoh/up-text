@@ -14,8 +14,6 @@ import Settings from '../components/Settings'
 import FloatingChat from '../components/FloatingChat'
 import API_BASE_URL from '../config/api'
 
-
-
 const socket = io(API_BASE_URL)
 
 const sortChats = (list) =>
@@ -48,7 +46,7 @@ export default function Dashboard() {
   // Audio refs
   const sentSoundRef = useRef(null)
   const receivedSoundRef = useRef(null)
-  const [soundEnabled, setSoundEnabled] = useState(true) // Allow user to toggle sounds
+  const [soundEnabled, setSoundEnabled] = useState(true)
 
   // ================= LOAD USER =================
   useEffect(() => {
@@ -58,7 +56,6 @@ export default function Dashboard() {
     const parsed = JSON.parse(stored)
     if (parsed?._id) setUser(parsed)
     
-    // Load sound preference from localStorage
     const savedSoundPref = localStorage.getItem('soundEnabled')
     if (savedSoundPref !== null) {
       setSoundEnabled(savedSoundPref === 'true')
@@ -67,16 +64,13 @@ export default function Dashboard() {
 
   // ================= INITIALIZE AUDIO =================
   useEffect(() => {
-    // Create audio elements
-    sentSoundRef.current = new Audio('../notifications/sent.mp3')
-    receivedSoundRef.current = new Audio('../notifications/received.mp3')
+    sentSoundRef.current = new Audio('/notifications/sent.mp3')
+    receivedSoundRef.current = new Audio('/notifications/received.mp3')
     
-    // Preload sounds
     sentSoundRef.current.load()
     receivedSoundRef.current.load()
     
     return () => {
-      // Cleanup
       if (sentSoundRef.current) {
         sentSoundRef.current.pause()
         sentSoundRef.current = null
@@ -88,18 +82,14 @@ export default function Dashboard() {
     }
   }, [])
 
-  // Function to play sound with error handling
   const playSound = async (soundRef) => {
     if (!soundEnabled || !soundRef.current) return
     
     try {
-      // Reset the audio to start if it's already playing
       soundRef.current.currentTime = 0
       await soundRef.current.play()
     } catch (error) {
       console.log('Audio play failed:', error)
-      // Most browsers require user interaction first
-      // The sound will work after first user interaction
     }
   }
 
@@ -115,26 +105,32 @@ export default function Dashboard() {
   }, [user])
 
   // ================= LOAD CHATS =================
-  useEffect(() => {
+  const loadChats = async () => {
     if (!user?._id) return
 
-    axios.get(`${API_BASE_URL}/api/chats/${user._id}`)
-      .then(res => {
-        const formatted = res.data.map(chat => {
-          const other = chat.members?.find(m => m._id !== user._id)
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/chats/${user._id}`)
+      const formatted = res.data.map(chat => {
+        const other = chat.members?.find(m => m._id !== user._id)
 
-          return {
-            ...chat,
-            id: chat._id,
-            name: chat.isGroup ? chat.name : other?.name || 'User',
-            lastMessage: chat.lastMessage || '',
-            updatedAt: chat.updatedAt || new Date(),
-            unreadCount: 0
-          }
-        })
-
-        setChats(sortChats(formatted))
+        return {
+          ...chat,
+          id: chat._id,
+          name: chat.isGroup ? chat.name : other?.name || 'User',
+          lastMessage: chat.lastMessage || '',
+          updatedAt: chat.updatedAt || new Date(),
+          unreadCount: 0
+        }
       })
+
+      setChats(sortChats(formatted))
+    } catch (error) {
+      console.error('Error loading chats:', error)
+    }
+  }
+
+  useEffect(() => {
+    loadChats()
   }, [user])
 
   // ================= JOIN ROOMS =================
@@ -163,19 +159,38 @@ export default function Dashboard() {
       })
   }, [selectedChat])
 
-  // Helper function to get profile image URL
-  const getProfileImageUrl = (sender) => {
-    if (!sender) return null
-    
-    let profilePic = sender.profilePic
-    
-    if (!profilePic) return null
-    
-    if (profilePic.startsWith('http')) {
-      return profilePic
-    }
-    
-    return `${API_BASE_URL}${profilePic}`
+ 
+  const getProfileImage = () => {
+  if (!user?.profilePic) {
+    return "https://static.vecteezy.com/system/resources/previews/026/631/405/non_2x/human-icon-symbol-design-illustration-vector.jpg"
+  }
+
+  if (user.profilePic.startsWith("http")) {
+    return user.profilePic
+  }
+
+  return `${API_BASE_URL.replace(/\/$/, "")}${user.profilePic}`
+}
+
+
+  // ================= UPDATE CHAT LAST MESSAGE =================
+  const updateChatLastMessage = (chatId, messageText, senderId, senderName) => {
+    setChats(prevChats => {
+      const updatedChats = prevChats.map(chat => {
+        if (chat.id === chatId) {
+          return {
+            ...chat,
+            lastMessage: messageText,
+            updatedAt: new Date(),
+            unreadCount: chat.id === selectedChat?.id 
+              ? 0 
+              : (chat.unreadCount || 0) + 1
+          }
+        }
+        return chat
+      })
+      return sortChats(updatedChats)
+    })
   }
 
   // ================= SOCKET =================
@@ -186,12 +201,10 @@ export default function Dashboard() {
       const senderId = typeof msg.sender === 'object' ? msg.sender._id : msg.sender
       const isOwnMessage = senderId === user._id
       
-      if (isOwnMessage) {
-        return
+      // Play received sound for incoming messages only
+      if (!isOwnMessage) {
+        playSound(receivedSoundRef)
       }
-
-      // Play received sound
-      playSound(receivedSoundRef)
 
       const messageKey = msg._id || `${msg.chatId}_${msg.text}_${msg.createdAt}`
       
@@ -205,6 +218,7 @@ export default function Dashboard() {
         pendingMessagesRef.current.delete(messageKey)
       }, 1000)
 
+      // Update messages state
       setMessages(prev => {
         const exists = prev.some(m => 
           (m._id && m._id === msg._id) || 
@@ -218,27 +232,13 @@ export default function Dashboard() {
         return [...prev, msg]
       })
 
+      // Update chat last message and unread count
+      const senderName = typeof msg.sender === 'object' ? msg.sender.name : 'User'
+      updateChatLastMessage(msg.chatId, msg.text, senderId, senderName)
+
+      // Show toast for incoming messages when not in current chat
       const isCurrentChat = msg.chatId === selectedChat?.id
-
-      setChats(prev => {
-        const updated = prev.map(chat => {
-          if (chat.id === msg.chatId) {
-            return {
-              ...chat,
-              lastMessage: msg.text,
-              updatedAt: new Date(),
-              unreadCount: !isCurrentChat
-                ? (chat.unreadCount || 0) + 1
-                : 0
-            }
-          }
-          return chat
-        })
-
-        return sortChats(updated)
-      })
-
-      const shouldShowToast = !isCurrentChat
+      const shouldShowToast = !isCurrentChat && !isOwnMessage
       const toastKey = `${msg.chatId}_${msg.createdAt || Date.now()}`
       
       if (shouldShowToast && !toastShownRef.current.has(toastKey)) {
@@ -249,7 +249,7 @@ export default function Dashboard() {
         }, 1000)
         
         const sender = typeof msg.sender === 'object' ? msg.sender : null
-        const senderName = sender?.name || 'New Message'
+        const toastSenderName = sender?.name || 'New Message'
         
         let imageUrl = getProfileImageUrl(sender)
         
@@ -261,19 +261,28 @@ export default function Dashboard() {
           <div
             className={`${
               t.visible ? 'animate-enter' : 'animate-leave'
-            } max-w-sm w-full bg-white shadow-xl rounded-xl flex items-center gap-3 p-3 border`}
+            } max-w-sm w-full bg-white shadow-xl rounded-xl flex items-center gap-3 p-3 border cursor-pointer`}
+            onClick={() => {
+              // Find and select the chat when toast is clicked
+              const chatToSelect = chats.find(chat => chat.id === msg.chatId)
+              if (chatToSelect) {
+                setSelectedChat(chatToSelect)
+                setMobileView("chat")
+              }
+              toast.dismiss(t.id)
+            }}
           >
             <img
               src={imageUrl}
               className="w-10 h-10 rounded-full object-cover"
-              alt={senderName}
+              alt={toastSenderName}
               onError={(e) => {
                 e.target.src = `https://api.dicebear.com/7.x/personas/svg?seed=${senderId}`
               }}
             />
             <div className="flex flex-col flex-1">
               <p className="text-sm font-semibold text-[#7B61FF]">
-                {senderName}
+                {toastSenderName}
               </p>
               <p className="text-xs text-gray-500 truncate">
                 {msg.text}
@@ -290,7 +299,7 @@ export default function Dashboard() {
     return () => {
       socket.off('receive_message', handleMessage)
     }
-  }, [user, selectedChat])
+  }, [user, selectedChat, chats])
 
   // ================= SEND MESSAGE =================
   const handleSendMessage = () => {
@@ -318,20 +327,8 @@ export default function Dashboard() {
     
     setMessages(prev => [...prev, localMsg])
 
-    setChats(prev =>
-      sortChats(
-        prev.map(chat =>
-          chat.id === selectedChat.id
-            ? { 
-                ...chat, 
-                lastMessage: newMessage, 
-                updatedAt: new Date(),
-                unreadCount: chat.unreadCount || 0
-              }
-            : chat
-        )
-      )
-    )
+    // Immediately update the chat list with the new message
+    updateChatLastMessage(selectedChat.id, newMessage, user._id, user.name)
 
     socket.emit('send_message', msg)
 
@@ -394,11 +391,12 @@ export default function Dashboard() {
     setShowGroupModal(false)
   }
 
-  // Toggle sound function (you can add a button in settings)
-  const toggleSound = () => {
-    const newValue = !soundEnabled
-    setSoundEnabled(newValue)
-    localStorage.setItem('soundEnabled', newValue)
+  // ================= HANDLE FLOATING CHAT MESSAGE =================
+  const handleFloatingChatMessage = (message) => {
+    if (!message || !selectedChat?.id) return
+    
+    // Update the chat list with the message from FloatingChat
+    updateChatLastMessage(selectedChat.id, message.text, user._id, user.name)
   }
 
   if (!user) return <div className="p-5">Loading...</div>
@@ -457,7 +455,11 @@ export default function Dashboard() {
                 setUser={setUser}
                 soundEnabled={soundEnabled}
                 setShowSidebar={setShowSidebar}
-                toggleSound={toggleSound}
+                toggleSound={() => {
+                  const newValue = !soundEnabled
+                  setSoundEnabled(newValue)
+                  localStorage.setItem('soundEnabled', newValue)
+                }}
               />
             }
           />
@@ -468,8 +470,14 @@ export default function Dashboard() {
 
       </main>
 
-{user && <FloatingChat />}
-
+      {user && (
+        <FloatingChat
+          user={user}
+          selectedChat={selectedChat}
+          socket={socket}
+          onMessageSent={handleFloatingChatMessage}
+        />
+      )}
 
       {showModal && (
         <AddContactModal
