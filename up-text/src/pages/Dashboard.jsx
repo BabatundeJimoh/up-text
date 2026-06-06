@@ -172,6 +172,20 @@ export default function Dashboard() {
   return `${API_BASE_URL.replace(/\/$/, "")}${user.profilePic}`
 }
 
+//logic to get profile image url for any person (used in toast notifications)
+const getProfileImageUrl = (person) => {
+  if (!person?.profilePic) {
+    return "https://static.vecteezy.com/system/resources/previews/026/631/405/non_2x/human-icon-symbol-design-illustration-vector.jpg"
+  }
+
+  if (person.profilePic.startsWith("http")) {
+    return person.profilePic
+  }
+
+  return `${API_BASE_URL.replace(/\/$/, "")}${person.profilePic}`
+}
+
+
 
   // ================= UPDATE CHAT LAST MESSAGE =================
   const updateChatLastMessage = (chatId, messageText, senderId, senderName) => {
@@ -218,6 +232,9 @@ export default function Dashboard() {
         pendingMessagesRef.current.delete(messageKey)
       }, 1000)
 
+
+
+
       // Update messages state
       setMessages(prev => {
         const exists = prev.some(m => 
@@ -231,6 +248,9 @@ export default function Dashboard() {
         
         return [...prev, msg]
       })
+
+
+      
 
       // Update chat last message and unread count
       const senderName = typeof msg.sender === 'object' ? msg.sender.name : 'User'
@@ -300,6 +320,9 @@ export default function Dashboard() {
       socket.off('receive_message', handleMessage)
     }
   }, [user, selectedChat, chats])
+
+
+
 
   // ================= SEND MESSAGE =================
   const handleSendMessage = () => {
