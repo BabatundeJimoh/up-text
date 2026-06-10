@@ -157,6 +157,23 @@ router.post("/group", async (req, res) => {
   }
 })
 
+///delete chat (soft delete)
+router.put("/chat/delete/:id", async (req, res) => {
+  await Chat.findByIdAndUpdate(req.params.id, {
+    deleted: true,
+    deletedAt: new Date()
+  })
+
+  res.json({ success: true })
+})
+
+
+//permanent delete chat
+router.delete("/chat/permanent/:id", async (req, res) => {
+  await Chat.findByIdAndDelete(req.params.id)
+  res.json({ success: true })
+})
+
 
 
 export default router;

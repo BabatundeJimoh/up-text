@@ -1,29 +1,34 @@
 'use client'
 import API_BASE_URL from '../config/api'
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 
 export default function ChatList({
   chats,
+  setChats,
   setSelectedChat,
+  selectedChat,
   user,
   users = [],
   className = "",
-  setShowSidebar
+  setShowSidebar,
+
+  onChatMenuOpen
 }) {
   const [search, setSearch] = useState('')
   const [imageErrors, setImageErrors] = useState({})
 
-  // ================= NORMALIZE URL (FIX) =================
+  const pressTimer = useRef(null)
+
   const normalizeUrl = (url) => {
     if (!url) return null
 
- if (url.includes('localhost:5001')) {
-  return url.replace(
-    'http://localhost:5001',
-    `${API_BASE_URL}`
-  )
-}
+    if (url.includes('localhost:5001')) {
+      return url.replace(
+        'http://localhost:5001',
+        `${API_BASE_URL}`
+      )
+    }
 
     return url
   }
@@ -36,11 +41,8 @@ export default function ChatList({
     )
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
 
-  // ================= AVATAR =================
   const getAvatar = (chat) => {
-    if (chat.isGroup) {
-      return '/group.png'
-    }
+    if (chat.isGroup) return '/group.png'
 
     const member = chat.members?.find(
       (m) => m._id !== user?._id
@@ -51,15 +53,10 @@ export default function ChatList({
       return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
     }
 
-    // ================= FIXED PROFILE PIC =================
-    if (member?.profilePic) {
-      return normalizeUrl(member.profilePic)
-    }
+    if (member?.profilePic) return normalizeUrl(member.profilePic)
 
     const freshUser = users.find(u => u._id === member?._id)
-    if (freshUser?.profilePic) {
-      return normalizeUrl(freshUser.profilePic)
-    }
+    if (freshUser?.profilePic) return normalizeUrl(freshUser.profilePic)
 
     const seed = member?._id || member?.name || chat.name || 'default'
     return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
@@ -67,7 +64,6 @@ export default function ChatList({
 
   const formatTime = (date) => {
     if (!date) return ''
-
     return new Date(date).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
@@ -83,6 +79,81 @@ export default function ChatList({
     }
   }
 
+  // ================= CHAT ACTION HANDLERS =================
+
+  const openMenu = (e, chat) => {
+    e.preventDefault()
+
+    const x = Math.min(e.pageX, window.innerWidth - 220)
+    const y = Math.min(e.pageY, window.innerHeight - 250)
+
+    onChatMenuOpen({
+      visible: true,
+      x,
+      y,
+      chat
+    })
+  }
+
+  const handleTouchStart = (chat) => {
+    pressTimer.current = setTimeout(() => {
+      onChatMenuOpen?.({
+        visible: true,
+        x: 120,
+        y: 200,
+        chat
+      })
+    }, 500)
+  }
+
+  const handleTouchEnd = () => {
+    clearTimeout(pressTimer.current)
+  }
+
+  const handleTouchMove = () => {
+    clearTimeout(pressTimer.current)
+  }
+
+  // ================= FIXED CHAT STATE LOGIC =================
+
+  // 🔥 UPDATED: REAL MONGO DELETE (SOFT DELETE)
+  const deleteChat = async (chat) => {
+    setChats(prev =>
+      prev.filter(c => c._id !== chat._id)
+    )
+
+    if (selectedChat?._id === chat._id) {
+      setSelectedChat(null)
+    }
+
+    try {
+      await fetch(`${API_BASE_URL}/chat/delete/${chat._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+    } catch (err) {
+      console.error("Delete failed:", err)
+    }
+  }
+
+  // 🔥 NEW: RESTORE CHAT (UNDO SUPPORT)
+  const restoreChat = async (chat) => {
+    try {
+      await fetch(`${API_BASE_URL}/chat/restore/${chat._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+    } catch (err) {
+      console.error("Restore failed:", err)
+    }
+
+    setChats(prev => [chat, ...prev])
+  }
+
   return (
     <section
       className={`
@@ -96,6 +167,7 @@ export default function ChatList({
         ${className}
       `}
     >
+      {/* HEADER */}
       <div className="flex items-center justify-between mb-4 px-2">
         <h2 className="text-lg font-bold">Chats</h2>
 
@@ -135,6 +207,10 @@ export default function ChatList({
             <div
               key={chat._id}
               onClick={() => setSelectedChat(chat)}
+              onContextMenu={(e) => openMenu(e, chat)}
+              onTouchStart={() => handleTouchStart(chat)}
+              onTouchEnd={handleTouchEnd}
+              onTouchMove={handleTouchMove}
               className="flex items-start gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-100 transition relative group"
             >
               <span className="absolute top-2 right-3 text-[11px] text-gray-400">
@@ -163,7 +239,9 @@ export default function ChatList({
                 <p className="font-semibold text-[#7B61FF] flex items-center gap-2">
                   {chat.name}
                   {chat.isGroup && (
-                    <span className="text-xs text-gray-400 font-normal">Group</span>
+                    <span className="text-xs text-gray-400 font-normal">
+                      Group
+                    </span>
                   )}
                 </p>
 

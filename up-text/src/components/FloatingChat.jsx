@@ -121,7 +121,7 @@ export default function FloatingChat({ user, selectedChat, socket }) {
         ref={buttonRef}
         onPointerDown={(e) => onPointerDown(e, buttonRef.current)}
         onClick={() => setOpen(prev => !prev)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-[#7B61FF] text-white rounded-full shadow-lg text-2xl z-50 touch-none"
+        className="fixed bottom-16 right-6 w-14 h-14 bg-[#7B61FF] text-white rounded-full shadow-lg text-2xl z-50 touch-none"
       >
         💬
       </button>

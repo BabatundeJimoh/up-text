@@ -3,7 +3,6 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import API_BASE_URL from '../config/api'
 
 export default function ChatActionMenu({
   menu,
@@ -32,56 +31,27 @@ export default function ChatActionMenu({
     closeMenu()
   }
 
-  // =================🔥 REAL DELETE (MongoDB soft delete) =================
-  const handleDelete = async () => {
+  const handleDelete = () => {
     const deletedChat = chat
 
-    // 1. Optimistic UI update
     onDeleteChat?.(deletedChat)
 
-    // 2. Backend soft delete
-    try {
-      await fetch(`${API_BASE_URL}/chat/delete/${chat._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-    } catch (err) {
-      console.error("Delete failed:", err)
-    }
-
-    // 3. Undo toast
     toast((t) => (
       <div className="flex items-center gap-3">
         <span>Chat deleted</span>
 
         <button
           className="text-[#7B61FF] font-bold"
-          onClick={async () => {
-            try {
-              // 🔥 restore in backend
-              await fetch(`${API_BASE_URL}/chat/restore/${chat._id}`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json"
-                }
-              })
-
-              // 🔥 restore in UI
-              onRestoreChat?.(deletedChat)
-
-              toast.dismiss(t.id)
-            } catch (err) {
-              console.error("Restore failed:", err)
-            }
+          onClick={() => {
+            onRestoreChat?.(deletedChat)
+            toast.dismiss(t.id)
           }}
         >
           Undo
         </button>
       </div>
     ), {
-      duration: 5000
+      duration: 4000
     })
 
     closeMenu()

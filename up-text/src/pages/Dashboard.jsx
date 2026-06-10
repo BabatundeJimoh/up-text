@@ -11,6 +11,7 @@ import ChatWindow from '../components/ChatWindow'
 import AddContactModal from '../components/AddContactModal'
 import GroupModal from '../components/GroupModal'
 import Settings from '../components/Settings'
+import ChatActionMenu from '../components/ChatActionMenu'
 import FloatingChat from '../components/FloatingChat'
 import API_BASE_URL from '../config/api'
 
@@ -26,7 +27,12 @@ export default function Dashboard() {
   const [chats, setChats] = useState([])
   const [messages, setMessages] = useState([])
   const [selectedChat, setSelectedChat] = useState(null)
-
+const [chatMenu, setChatMenu] = useState({
+  visible: false,
+  x: 0,
+  y: 0,
+  chat: null
+})
   const [users, setUsers] = useState([])
   const [search, setSearch] = useState('')
 
@@ -424,6 +430,64 @@ const getProfileImageUrl = (person) => {
 
   if (!user) return <div className="p-5">Loading...</div>
 
+
+
+const muteChat = (chat) => {
+  setChats(prev =>
+    prev.map(c =>
+      c.id === chat.id
+        ? { ...c, muted: !c.muted }
+        : c
+    )
+  )
+}
+
+const archiveChat = (chat) => {
+  setChats(prev =>
+    prev.map(c =>
+      c.id === chat.id
+        ? { ...c, archived: !c.archived }
+        : c
+    )
+  )
+}
+
+const deleteChat = (chat) => {
+  setChats(prev => prev.filter(c => c.id !== chat.id))
+
+  if (selectedChat?.id === chat.id) {
+    setSelectedChat(null)
+  }
+}
+
+
+
+const restoreChat = async (chat) => {
+  try {
+    await fetch(`${API_BASE_URL}/chat/restore/${chat._id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+
+    // add back to UI if missing
+    setChats(prev => {
+      const exists = prev.find(c => c._id === chat._id)
+      if (exists) return prev
+      return [chat, ...prev]
+    })
+
+  } catch (err) {
+    console.error("Restore failed:", err)
+  }
+}
+
+
+
+
+
+
   return (
     <div className="flex h-screen bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]">
 
@@ -443,17 +507,29 @@ const getProfileImageUrl = (person) => {
             path="chats"
             element={
               <>
-                <ChatList
-                  chats={chats}
-                  user={user}
-                  users={users}
-                  setShowSidebar={setShowSidebar}
-                  setSelectedChat={(chat) => {
-                    setSelectedChat(chat)
-                    setMobileView("chat")
-                  }}
-                  className={mobileView === "chat" ? "hidden md:block" : "block md:block"}
-                />
+             <ChatList
+  chats={chats}
+  setChats={setChats}   // ✅ ADD THIS
+  user={user}
+  users={users}
+  onChatMenuOpen={setChatMenu}
+  setShowSidebar={setShowSidebar}
+  setSelectedChat={(chat) => {
+    setSelectedChat(chat)
+    setMobileView("chat")
+  }}
+  className={mobileView === "chat" ? "hidden md:block" : "block md:block"}
+/>
+
+<ChatActionMenu
+  menu={chatMenu}
+  setMenu={setChatMenu}
+  onOpenChat={(chat) => setSelectedChat(chat)}
+  onMuteChat={muteChat}
+  onArchiveChat={archiveChat}
+  onDeleteChat={deleteChat}
+  onRestoreChat={restoreChat}   // now works
+/>
 
                 <ChatWindow
                   selectedChat={selectedChat}

@@ -25,6 +25,15 @@ const chatSchema = new mongoose.Schema(
   type: Map,
   of: Number,
   default: {}
+},
+
+deleted: {
+  type: Boolean,
+  default: false
+},
+deletedAt: {
+  type: Date,
+  default: null
 }
 
   },

@@ -87,53 +87,53 @@ export default function SideBar({
           {user?.name || 'Guest User'}
         </p>
 
-        <ul className="space-y-7 flex-1 overflow-y-auto">
+        <ul className="space-y-3 flex-1 overflow-y-auto">
 
-          <li>
-            <NavLink
-              to="/dashboard/chats"
-              className={linkClass}
-              onClick={closeSidebar}
-            >
-              <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
-              <p className="text-white">Chats</p>
-            </NavLink>
-          </li>
+  <li>
+    <NavLink
+      to="/dashboard/chats"
+      className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
+      onClick={closeSidebar}
+    >
+      <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
+      <p className="text-white">Chats</p>
+    </NavLink>
+  </li>
 
-          <li
-            onClick={() => {
-              setShowModal?.(true)
-              closeSidebar()
-            }}
-            className="flex items-center gap-3 hover p-2 rounded cursor-pointer"
-          >
-            <UserGroupIcon className="w-5 h-5 text-white" />
-            <p className="text-white">Add Contact</p>
-          </li>
+  <li
+    onClick={() => {
+      setShowModal?.(true)
+      closeSidebar()
+    }}
+    className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20"
+  >
+    <UserGroupIcon className="w-5 h-5 text-white" />
+    <p className="text-white">Add Contact</p>
+  </li>
 
-          <li
-            onClick={() => {
-              setShowGroupModal?.(true)
-              closeSidebar()
-            }}
-            className="flex items-center gap-3 hover p-2 rounded cursor-pointer"
-          >
-            <UserGroupIcon className="w-5 h-5 text-white" />
-            <p className="text-white">Create Group</p>
-          </li>
+  <li
+    onClick={() => {
+      setShowGroupModal?.(true)
+      closeSidebar()
+    }}
+    className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20"
+  >
+    <UserGroupIcon className="w-5 h-5 text-white" />
+    <p className="text-white">Create Group</p>
+  </li>
 
-          <li>
-            <NavLink
-              to="/dashboard/settings"
-              className={linkClass}
-              onClick={closeSidebar}
-            >
-              <Cog6ToothIcon className="w-5 h-5 text-white" />
-              <p className="text-white">Settings</p>
-            </NavLink>
-          </li>
+  <li>
+    <NavLink
+      to="/dashboard/settings"
+      className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
+      onClick={closeSidebar}
+    >
+      <Cog6ToothIcon className="w-5 h-5 text-white" />
+      <p className="text-white">Settings</p>
+    </NavLink>
+  </li>
 
-        </ul>
+</ul>
       </aside>
     </>
   )
