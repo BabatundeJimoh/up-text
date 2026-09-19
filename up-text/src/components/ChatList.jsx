@@ -155,18 +155,19 @@ export default function ChatList({
   }
 
   return (
-    <section
-      className={`
-        flex flex-col
-        w-full md:w-96
-        h-full
-        bg-[#F5F7FB]
-        p-4
-        text-black
-        md:rounded-l-[40px]
-        ${className}
-      `}
-    >
+<section 
+  className={` 
+    flex flex-col 
+    w-full md:w-[35%] lg:w-[32%] xl:w-[30%]
+    min-w-[300px]
+    h-full 
+    bg-[#F5F7FB] 
+    p-4 
+    text-black 
+    md:rounded-l-[40px] 
+    ${className} 
+  `} 
+>
       {/* HEADER */}
       <div className="flex items-center justify-between mb-4 px-2">
         <h2 className="text-lg font-bold">Chats</h2>

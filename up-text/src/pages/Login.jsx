@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import API_BASE_URL from "../config/api"
+import logo from "../assets/logo.png"
 
 function Login() {
   const [email, setEmail] = useState("")
@@ -37,26 +38,34 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-100">
-      <div className="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl">
+    <div className="min-h-screen flex justify-center px-4 pt-4 sm:pt-8">
+      <div className="w-full max-w-md px-6 py-4">
+        
+        {/* Logo */}
+     <div className="flex justify-center mb-3">
+  <img
+    src={logo}
+    alt="UP-TEXT Logo"
+    className="w-40 h-40 sm:w-44 sm:h-44 object-contain"
+  />
+</div>
+{/* Header */}
+<div className="text-center mb-5 mt-12 sm:mt-10">
+  <h2 className="text-3xl font-bold text-gray-800">
+    Sign In
+  </h2>
 
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">
-            Welcome Back 👋
-          </h2>
-          <p className="text-gray-500 mt-1 text-sm">
-            Login to continue your chats
-          </p>
-        </div>
+  <p className="text-gray-500 mt-1 text-sm pb-9">
+    Enter your credentials to access your account
+  </p>
+</div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
           <input
             type="email"
             placeholder="Email"
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-800"
+            className="w-full p-3 rounded-lg bg-white text-black placeholder-gray-400 border border-gray-300 outline-none focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF] transition"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -65,21 +74,23 @@ function Login() {
           <input
             type="password"
             placeholder="Password"
-            className="border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-800"
+            className="w-full p-3 rounded-lg bg-white text-black placeholder-gray-400 border border-gray-300 outline-none focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF] transition"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
           <button
-            className="bg-blue-600 hover:bg-blue-700 transition text-white p-3 rounded-lg font-semibold shadow-md"
-          >
+  type="submit"
+  className="bg-gradient-to-r from-[#9F6BFF] to-[#7B61FF] hover:opacity-90 transition text-white p-3 rounded-lg font-semibold shadow-md"
+>
+
             Login
           </button>
         </form>
 
         {/* Footer */}
-        <div className="text-center mt-6 text-sm text-gray-600">
+        <div className="text-center mt-5 text-sm text-gray-600">
           Don’t have an account?{" "}
           <Link
             to="/register"

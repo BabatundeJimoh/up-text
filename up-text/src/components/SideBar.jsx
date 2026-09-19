@@ -1,50 +1,52 @@
-'use client'
+"use client";
 
-import React from 'react'
+import React from "react";
+
 import {
   ChatBubbleLeftRightIcon,
   UserGroupIcon,
   Cog6ToothIcon,
   XMarkIcon,
-} from '@heroicons/react/24/outline'
-import { NavLink } from 'react-router-dom'
-import API_BASE_URL from '../config/api'
+} from "@heroicons/react/24/outline";
+
+import { NavLink } from "react-router-dom";
+import API_BASE_URL from "../config/api";
 
 export default function SideBar({
   setShowModal,
   setShowGroupModal,
   user,
   showSidebar,
-  setShowSidebar
+  setShowSidebar,
 }) {
-
-  const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 p-2 rounded hover ${
-      isActive ? 'text-yellow-400' : 'text-white'
-    }`
+  // ================= CLOSE SIDEBAR =================
 
   const closeSidebar = () => {
-    if (typeof setShowSidebar === 'function') {
-      setShowSidebar(false)
+    if (typeof setShowSidebar === "function") {
+      setShowSidebar(false);
     }
-  }
+  };
 
-  // ✅ FIXED PROFILE IMAGE LOGIC
+  // ================= PROFILE IMAGE =================
+
   const getProfileImage = () => {
     if (!user?.profilePic) {
-      return "https://i.pravatar.cc/150?img=3"
+      return "https://i.pravatar.cc/150?img=3";
     }
 
     if (user.profilePic.startsWith("http")) {
-      return user.profilePic
+      return user.profilePic;
     }
 
-    return `${API_BASE_URL.replace(/\/$/, "")}${user.profilePic.startsWith('/') ? '' : '/'}${user.profilePic}`
-  }
+    return `${API_BASE_URL.replace(/\/$/, "")}${
+      user.profilePic.startsWith("/") ? "" : "/"
+    }${user.profilePic}`;
+  };
 
   return (
     <>
-      {/* BACKDROP */}
+      {/* ================= BACKDROP ================= */}
+
       {showSidebar && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -52,7 +54,8 @@ export default function SideBar({
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* ================= SIDEBAR ================= */}
+
       <aside
         className={`
           fixed md:static z-50 h-full w-72 md:w-60
@@ -60,81 +63,109 @@ export default function SideBar({
           flex flex-col p-4
           transition-transform duration-300
           md:translate-x-0
-          ${showSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${
+            showSidebar
+              ? "translate-x-0"
+              : "-translate-x-full md:translate-x-0"
+          }
         `}
       >
+        {/* ================= CLOSE BUTTON ================= */}
 
-        {/* CLOSE BUTTON */}
         <div className="md:hidden flex justify-end">
-          <button onClick={closeSidebar}>
+          <button
+            type="button"
+            onClick={closeSidebar}
+            className="p-1"
+          >
             <XMarkIcon className="w-6 h-6 text-white" />
           </button>
         </div>
 
-        {/* PROFILE */}
+        {/* ================= PROFILE ================= */}
+
         <div className="flex justify-center py-5">
           <img
             className="rounded-full w-20 h-20 object-cover border border-white/30"
             src={getProfileImage()}
             alt="Profile"
             onError={(e) => {
-              e.target.src = "https://i.pravatar.cc/150?img=3"
+              e.target.onerror = null;
+              e.target.src = "https://i.pravatar.cc/150?img=3";
             }}
           />
         </div>
 
         <p className="text-center mb-7 font-semibold text-white">
-          {user?.name || 'Guest User'}
+          {user?.name || "Guest User"}
         </p>
 
+        {/* ================= MENU ================= */}
+
         <ul className="space-y-3 flex-1 overflow-y-auto">
+          {/* ================= CHATS ================= */}
 
-  <li>
-    <NavLink
-      to="/dashboard/chats"
-      className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
-      onClick={closeSidebar}
-    >
-      <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
-      <p className="text-white">Chats</p>
-    </NavLink>
-  </li>
+          <li>
+            <NavLink
+              to="/dashboard/chats"
+              className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
+              onClick={closeSidebar}
+            >
+              <ChatBubbleLeftRightIcon className="w-5 h-5 text-white" />
 
-  <li
-    onClick={() => {
-      setShowModal?.(true)
-      closeSidebar()
-    }}
-    className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20"
-  >
-    <UserGroupIcon className="w-5 h-5 text-white" />
-    <p className="text-white">Add Contact</p>
-  </li>
+              <p className="text-white">Chats</p>
+            </NavLink>
+          </li>
 
-  <li
-    onClick={() => {
-      setShowGroupModal?.(true)
-      closeSidebar()
-    }}
-    className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20"
-  >
-    <UserGroupIcon className="w-5 h-5 text-white" />
-    <p className="text-white">Create Group</p>
-  </li>
+          {/* ================= ADD CONTACT ================= */}
 
-  <li>
-    <NavLink
-      to="/dashboard/settings"
-      className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
-      onClick={closeSidebar}
-    >
-      <Cog6ToothIcon className="w-5 h-5 text-white" />
-      <p className="text-white">Settings</p>
-    </NavLink>
-  </li>
+          <li
+            onClick={() => {
+              if (typeof setShowModal === "function") {
+                setShowModal(true);
+              }
 
-</ul>
+              closeSidebar();
+            }}
+            className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
+          >
+            <UserGroupIcon className="w-5 h-5 text-white" />
+
+            <p className="text-white">Add Contact</p>
+          </li>
+
+          {/* ================= CREATE GROUP ================= */}
+
+       <li
+  onClick={() => {
+    console.log("Create Group clicked")
+
+    if (typeof setShowGroupModal === "function") {
+      setShowGroupModal(true)
+    }
+
+    closeSidebar()
+  }}
+  className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
+>
+  <UserGroupIcon className="w-5 h-5 text-white" />
+  <p className="text-white">Create Group</p>
+</li>
+          {/* ================= SETTINGS ================= */}
+
+          <li>
+            <NavLink
+              to="/dashboard/settings"
+              className="flex items-center gap-3 p-3 rounded cursor-pointer hover:bg-white/20 w-full"
+              onClick={closeSidebar}
+            >
+              <Cog6ToothIcon className="w-5 h-5 text-white" />
+
+              <p className="text-white">Settings</p>
+            </NavLink>
+          </li>
+        </ul>
       </aside>
     </>
-  )
+  );
 }

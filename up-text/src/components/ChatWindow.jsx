@@ -1,7 +1,8 @@
-'use client'
-import API_BASE_URL from '../config/api'
-import React, { useEffect, useMemo, useState } from 'react'
-import socket from '../socket'
+"use client";
+
+import API_BASE_URL from "../config/api";
+import React, { useEffect, useMemo, useState } from "react";
+import socket from "../socket";
 
 export default function ChatWindow({
   className = "",
@@ -15,67 +16,79 @@ export default function ChatWindow({
   setSelectedChat,
   setMobileView,
 }) {
-
-  const [imageError, setImageError] = useState(false)
+  const [imageError, setImageError] = useState(false);
 
   // ================= MARK AS SEEN =================
+
   useEffect(() => {
-    if (!selectedChat || !user?._id) return
+    if (!selectedChat || !user?._id) return;
 
     socket.emit("mark_seen", {
       chatId: selectedChat.id,
       userId: user._id,
-    })
-  }, [selectedChat, user])
+    });
+  }, [selectedChat, user]);
 
   // ================= OTHER USER =================
+
   const otherUser = useMemo(() => {
-    if (!selectedChat?.members || !user?._id) return null
-    return selectedChat.members.find(m => m._id !== user._id)
-  }, [selectedChat, user])
+    if (!selectedChat?.members || !user?._id) return null;
 
-  const normalizeBase = API_BASE_URL?.replace(/\/$/, "")
+    return selectedChat.members.find((m) => m._id !== user._id);
+  }, [selectedChat, user]);
 
-  // ================= GET PROFILE PICTURE (FIXED) =================
+  const normalizeBase = API_BASE_URL?.replace(/\/$/, "");
+
+  // ================= GET PROFILE PICTURE =================
+
   const getProfilePic = () => {
     if (!otherUser) {
-      return "https://i.pravatar.cc/150?img=3"
+      return "https://i.pravatar.cc/150?img=3";
     }
 
-    const pic = otherUser.profilePic
+    const pic = otherUser.profilePic;
 
-    // fallback if image failed
+    // Fallback if image failed
     if (imageError) {
-      const seed = otherUser._id || otherUser.name || 'default'
-      return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
+      const seed = otherUser._id || otherUser.name || "default";
+
+      return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(
+        seed
+      )}`;
     }
 
-    // real image
+    // Real image
     if (pic) {
-      if (pic.startsWith('http')) return pic
-      return `${normalizeBase}${pic}`
+      if (pic.startsWith("http")) return pic;
+
+      return `${normalizeBase}${pic}`;
     }
 
-    // default avatar
-    const seed = otherUser._id || otherUser.name || 'default'
-    return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(seed)}`
-  }
+    // Default avatar
+    const seed = otherUser._id || otherUser.name || "default";
 
-  // ================= IMAGE ERROR HANDLER (FIXED) =================
+    return `https://api.dicebear.com/7.x/personas/svg?seed=${encodeURIComponent(
+      seed
+    )}`;
+  };
+
+  // ================= IMAGE ERROR HANDLER =================
+
   const handleImageError = (e) => {
-    e.target.onerror = null
-    setImageError(true)
-  }
+    e.target.onerror = null;
+    setImageError(true);
+  };
 
   return (
-    <section className={`flex-1 max-w-3xl mx-auto flex flex-col justify-between bg-[#F5F7FB] text-black p-4 relative ${className}`}>
-
+    <section
+      className={`flex-1 min-w-0 w-full flex flex-col justify-between bg-[#F5F7FB] text-black p-4 relative ${className}`}
+    >
       {/* ================= HEADER ================= */}
+
       <div className="flex items-center justify-between mb-4 p-3 rounded-lg w-full bg-white">
-
         {/* LEFT */}
-        <div className="flex items-center gap-3">
 
+        <div className="flex items-center gap-3">
           <button
             className="md:hidden text-2xl mr-1"
             onClick={() => setMobileView("list")}
@@ -93,32 +106,35 @@ export default function ChatWindow({
 
             <span
               className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${
-                otherUser?.lastSeen === null ? "bg-green-500" : "bg-gray-400"
+                otherUser?.lastSeen === null
+                  ? "bg-green-500"
+                  : "bg-gray-400"
               }`}
             />
           </div>
 
           <div className="flex flex-col">
             <p className="font-semibold text-[#7B61FF]">
-              {selectedChat?.isGroup 
-                ? selectedChat.name 
-                : (otherUser?.name || selectedChat?.name || 'User')}
+              {selectedChat?.isGroup
+                ? selectedChat.name
+                : otherUser?.name || selectedChat?.name || "User"}
             </p>
 
             <span className="text-xs text-gray-400">
-              {selectedChat?.isGroup 
+              {selectedChat?.isGroup
                 ? `${selectedChat.members?.length || 0} members`
-                : (otherUser?.lastSeen === null
-                  ? "Online"
-                  : otherUser?.lastSeen
-                  ? `Last seen ${new Date(otherUser.lastSeen).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}`
-                  : "Offline")}
+                : otherUser?.lastSeen === null
+                ? "Online"
+                : otherUser?.lastSeen
+                ? `Last seen ${new Date(
+                    otherUser.lastSeen
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+                : "Offline"}
             </span>
           </div>
-
         </div>
 
         <button
@@ -127,12 +143,11 @@ export default function ChatWindow({
         >
           ☰
         </button>
-
       </div>
 
       {/* ================= MESSAGES ================= */}
-      <div className="overflow-y-auto mb-4 flex-1 bg-white p-3 rounded-lg">
 
+      <div className="overflow-y-auto mb-4 flex-1 min-h-0 bg-white p-3 rounded-lg custom-scrollbar">
         {messages.length === 0 && (
           <p className="text-gray-400 text-center mt-10">
             No messages yet
@@ -141,22 +156,22 @@ export default function ChatWindow({
 
         {messages.map((msg, idx) => {
           const senderId =
-            typeof msg.sender === 'object' ? msg.sender._id : msg.sender
+            typeof msg.sender === "object" ? msg.sender._id : msg.sender;
 
-          const isSender = senderId === user?._id
+          const isSender = senderId === user?._id;
 
           return (
             <div
               key={msg._id || msg.tempId || idx}
               className={`flex flex-col mb-3 ${
-                isSender ? 'items-end' : 'items-start'
+                isSender ? "items-end" : "items-start"
               }`}
             >
               <div
                 className={`px-4 py-2 rounded-lg max-w-[70%] ${
                   isSender
-                    ? 'bg-[#7B61FF] text-white'
-                    : 'bg-gray-200 text-black'
+                    ? "bg-[#7B61FF] text-white"
+                    : "bg-gray-200 text-black"
                 }`}
               >
                 {msg.text}
@@ -166,33 +181,43 @@ export default function ChatWindow({
                 <span className="text-xs text-gray-400">
                   {msg.createdAt
                     ? new Date(msg.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })
-                    : 'Just now'}
+                    : "Just now"}
                 </span>
 
                 {isSender && (
                   <div className="flex gap-1">
-                    <span className={`w-1.5 h-1.5 rounded-full ${msg.seen ? 'bg-blue-500' : 'bg-gray-400'}`} />
-                    <span className={`w-1.5 h-1.5 rounded-full ${msg.seen ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        msg.seen ? "bg-blue-500" : "bg-gray-400"
+                      }`}
+                    />
+
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        msg.seen ? "bg-blue-500" : "bg-gray-400"
+                      }`}
+                    />
                   </div>
                 )}
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
       {/* ================= INPUT ================= */}
+
       <div className="flex gap-2">
         <input
           type="text"
           placeholder="Type a message..."
-          className="flex-1 px-3 py-2 border rounded outline-none text-gray-900 placeholder-gray-400 focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF]"
+          className="flex-1 px-3 py-2 border rounded bg-gray-200 outline-none text-black placeholder-gray-400 focus:border-[#7B61FF] focus:ring-1 focus:ring-[#7B61FF]"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
         />
 
         <button
@@ -203,6 +228,31 @@ export default function ChatWindow({
         </button>
       </div>
 
+      {/* ================= CUSTOM SCROLLBAR ================= */}
+
+      <style jsx global>{`
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #d1d5db transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #9ca3af;
+        }
+      `}</style>
     </section>
-  )
+  );
 }
