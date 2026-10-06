@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import API_BASE_URL from "../config/api";
+
+import React, {
+  useState,
+  useEffect,
+  useRef,
+} from "react";
+
 import toast from "react-hot-toast";
 import io from "socket.io-client";
 import axios from "axios";
+
 import { Routes, Route, Navigate } from "react-router-dom";
+
 import SideBar from "../components/SideBar";
 import ChatList from "../components/ChatList";
 import ChatWindow from "../components/ChatWindow";
@@ -13,65 +22,127 @@ import GroupModal from "../components/GroupModal";
 import Settings from "../components/Settings";
 import ChatActionMenu from "../components/ChatActionMenu";
 import FloatingChat from "../components/FloatingChat";
-import API_BASE_URL from "../config/api";
 
 const socket = io(API_BASE_URL);
 
+// ============================================================
+// SORT CHATS
+// ============================================================
+
 const sortChats = (list) =>
   [...list].sort(
-    (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0),
+    (a, b) =>
+      new Date(b.updatedAt || 0) -
+      new Date(a.updatedAt || 0)
   );
 
+// ============================================================
+// DASHBOARD
+// ============================================================
+
 export default function Dashboard() {
+  // ================= USER =================
+
   const [user, setUser] = useState(null);
+
+  // ================= CHATS =================
+
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
+
+  // ================= USERS =================
+
+  const [users, setUsers] = useState([]);
+
+  // ================= CHAT MENU =================
+
   const [chatMenu, setChatMenu] = useState({
     visible: false,
     x: 0,
     y: 0,
     chat: null,
   });
-  const [users, setUsers] = useState([]);
+
+  // ================= SEARCH =================
+
   const [search, setSearch] = useState("");
+
+  // ================= MODALS =================
 
   const [showModal, setShowModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
 
+  // ================= GROUP =================
+
   const [groupName, setGroupName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
+
+  // ================= MOBILE =================
+
   const [mobileView, setMobileView] = useState("list");
 
+  // ================= MESSAGE =================
+
   const [newMessage, setNewMessage] = useState("");
+
+  // ================= LOADING =================
+
+  const [loadingChats, setLoadingChats] = useState(true);
+
+  // ================= REFS =================
+
   const socketInit = useRef(false);
   const toastShownRef = useRef(new Set());
   const pendingMessagesRef = useRef(new Map());
 
-  // Audio refs
+  // ================= AUDIO =================
+
   const sentSoundRef = useRef(null);
   const receivedSoundRef = useRef(null);
+
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // ================= LOAD USER =================
+  // ============================================================
+  // LOAD USER
+  // ============================================================
+
   useEffect(() => {
     const stored = localStorage.getItem("user");
+
     if (!stored) return;
 
-    const parsed = JSON.parse(stored);
-    if (parsed?._id) setUser(parsed);
+    try {
+      const parsed = JSON.parse(stored);
 
-    const savedSoundPref = localStorage.getItem("soundEnabled");
-    if (savedSoundPref !== null) {
-      setSoundEnabled(savedSoundPref === "true");
+      if (parsed?._id) {
+        setUser(parsed);
+      }
+
+      const savedSoundPref =
+        localStorage.getItem("soundEnabled");
+
+      if (savedSoundPref !== null) {
+        setSoundEnabled(savedSoundPref === "true");
+      }
+    } catch (error) {
+      console.error("Failed to load user:", error);
     }
   }, []);
 
-  // ================= INITIALIZE AUDIO =================
+  // ============================================================
+  // INITIALIZE AUDIO
+  // ============================================================
+
   useEffect(() => {
-    sentSoundRef.current = new Audio("/notifications/sent.mp3");
-    receivedSoundRef.current = new Audio("/notifications/received.mp3");
+    sentSoundRef.current = new Audio(
+      "/notifications/sent.mp3"
+    );
+
+    receivedSoundRef.current = new Audio(
+      "/notifications/received.mp3"
+    );
 
     sentSoundRef.current.load();
     receivedSoundRef.current.load();
@@ -81,12 +152,17 @@ export default function Dashboard() {
         sentSoundRef.current.pause();
         sentSoundRef.current = null;
       }
+
       if (receivedSoundRef.current) {
         receivedSoundRef.current.pause();
         receivedSoundRef.current = null;
       }
     };
   }, []);
+
+  // ============================================================
+  // PLAY SOUND
+  // ============================================================
 
   const playSound = async (soundRef) => {
     if (!soundEnabled || !soundRef.current) return;
@@ -99,40 +175,86 @@ export default function Dashboard() {
     }
   };
 
-  // ================= LOAD USERS =================
+  // ============================================================
+  // LOAD USERS
+  // ============================================================
+
   useEffect(() => {
     if (!user?._id) return;
 
     axios
       .get(`${API_BASE_URL}/api/auth/users`)
       .then((res) => {
-        setUsers(res.data.filter((u) => u._id !== user._id));
+        setUsers(
+          res.data.filter(
+            (u) => u._id !== user._id
+          )
+        );
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error("Error loading users:", error);
+      });
   }, [user]);
 
-  // ================= LOAD CHATS =================
+  // ============================================================
+  // LOAD CHATS
+  // ============================================================
+
   const loadChats = async () => {
     if (!user?._id) return;
 
+    setLoadingChats(true);
+
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/chats/${user._id}`);
+      const res = await axios.get(
+        `${API_BASE_URL}/api/chats/${user._id}`
+      );
+
       const formatted = res.data.map((chat) => {
-        const other = chat.members?.find((m) => m._id !== user._id);
+        const other = chat.members?.find(
+          (m) => m._id !== user._id
+        );
 
         return {
           ...chat,
           id: chat._id,
-          name: chat.isGroup ? chat.name : other?.name || "User",
+          name: chat.isGroup
+            ? chat.name
+            : other?.name || "User",
           lastMessage: chat.lastMessage || "",
-          updatedAt: chat.updatedAt || new Date(),
+          updatedAt:
+            chat.updatedAt || new Date(),
           unreadCount: 0,
         };
       });
 
-      setChats(sortChats(formatted));
+      const sorted = sortChats(formatted);
+
+      setChats(sorted);
+
+      // ========================================================
+      // MOBILE EMPTY STATE
+      // ========================================================
+
+      if (sorted.length === 0) {
+        setSelectedChat(null);
+        setMobileView("empty");
+      } else {
+        setMobileView((current) => {
+          if (current === "empty") {
+            return "list";
+          }
+
+          return current;
+        });
+      }
     } catch (error) {
-      console.error("Error loading chats:", error);
+      console.error(
+        "Error loading chats:",
+        error
+      );
+    } finally {
+      setLoadingChats(false);
     }
   };
 
@@ -140,28 +262,57 @@ export default function Dashboard() {
     loadChats();
   }, [user]);
 
-  // ================= JOIN ROOMS =================
+  // ============================================================
+  // JOIN ROOMS
+  // ============================================================
+
   useEffect(() => {
     chats.forEach((chat) => {
-      if (chat?.id) socket.emit("join_chat", chat.id);
-    });
-  }, [chats]);
-
-  // ================= LOAD MESSAGES =================
-  useEffect(() => {
-    if (!selectedChat?.id) return;
-
-    axios.get(`${API_BASE_URL}/api/messages/${selectedChat.id}`).then((res) => {
-      setMessages(res.data);
-      if (selectedChat.id) {
-        setChats((prev) =>
-          prev.map((chat) =>
-            chat.id === selectedChat.id ? { ...chat, unreadCount: 0 } : chat,
-          ),
+      if (chat?.id) {
+        socket.emit(
+          "join_chat",
+          chat.id
         );
       }
     });
+  }, [chats]);
+
+  // ============================================================
+  // LOAD MESSAGES
+  // ============================================================
+
+  useEffect(() => {
+    if (!selectedChat?.id) return;
+
+    axios
+      .get(
+        `${API_BASE_URL}/api/messages/${selectedChat.id}`
+      )
+      .then((res) => {
+        setMessages(res.data);
+
+        setChats((prev) =>
+          prev.map((chat) =>
+            chat.id === selectedChat.id
+              ? {
+                  ...chat,
+                  unreadCount: 0,
+                }
+              : chat
+          )
+        );
+      })
+      .catch((error) => {
+        console.error(
+          "Error loading messages:",
+          error
+        );
+      });
   }, [selectedChat]);
+
+  // ============================================================
+  // PROFILE IMAGE
+  // ============================================================
 
   const getProfileImage = () => {
     if (!user?.profilePic) {
@@ -172,10 +323,16 @@ export default function Dashboard() {
       return user.profilePic;
     }
 
-    return `${API_BASE_URL.replace(/\/$/, "")}${user.profilePic}`;
+    return `${API_BASE_URL.replace(
+      /\/$/,
+      ""
+    )}${user.profilePic}`;
   };
 
-  //logic to get profile image url for any person (used in toast notifications)
+  // ============================================================
+  // PROFILE IMAGE FOR PERSON
+  // ============================================================
+
   const getProfileImageUrl = (person) => {
     if (!person?.profilePic) {
       return "https://static.vecteezy.com/system/resources/previews/026/631/405/non_2x/human-icon-symbol-design-illustration-vector.jpg";
@@ -185,61 +342,101 @@ export default function Dashboard() {
       return person.profilePic;
     }
 
-    return `${API_BASE_URL.replace(/\/$/, "")}${person.profilePic}`;
+    return `${API_BASE_URL.replace(
+      /\/$/,
+      ""
+    )}${person.profilePic}`;
   };
 
-  // ================= UPDATE CHAT LAST MESSAGE =================
-  const updateChatLastMessage = (chatId, messageText, senderId, senderName) => {
+  // ============================================================
+  // UPDATE CHAT LAST MESSAGE
+  // ============================================================
+
+  const updateChatLastMessage = (
+    chatId,
+    messageText,
+    senderId,
+    senderName
+  ) => {
     setChats((prevChats) => {
-      const updatedChats = prevChats.map((chat) => {
-        if (chat.id === chatId) {
-          return {
-            ...chat,
-            lastMessage: messageText,
-            updatedAt: new Date(),
-            unreadCount:
-              chat.id === selectedChat?.id ? 0 : (chat.unreadCount || 0) + 1,
-          };
+      const updatedChats = prevChats.map(
+        (chat) => {
+          if (chat.id === chatId) {
+            return {
+              ...chat,
+              lastMessage: messageText,
+              updatedAt: new Date(),
+
+              unreadCount:
+                chat.id === selectedChat?.id
+                  ? 0
+                  : (chat.unreadCount || 0) + 1,
+            };
+          }
+
+          return chat;
         }
-        return chat;
-      });
+      );
+
       return sortChats(updatedChats);
     });
   };
 
-  // ================= SOCKET =================
+  // ============================================================
+  // SOCKET MESSAGE
+  // ============================================================
+
   useEffect(() => {
     if (!user?._id) return;
 
     const handleMessage = (msg) => {
       const senderId =
-        typeof msg.sender === "object" ? msg.sender._id : msg.sender;
-      const isOwnMessage = senderId === user._id;
+        typeof msg.sender === "object"
+          ? msg.sender._id
+          : msg.sender;
 
-      // Play received sound for incoming messages only
+      const isOwnMessage =
+        senderId === user._id;
+
+      // Incoming sound
       if (!isOwnMessage) {
         playSound(receivedSoundRef);
       }
 
       const messageKey =
-        msg._id || `${msg.chatId}_${msg.text}_${msg.createdAt}`;
+        msg._id ||
+        `${msg.chatId}_${msg.text}_${msg.createdAt}`;
 
-      if (pendingMessagesRef.current.has(messageKey)) {
+      if (
+        pendingMessagesRef.current.has(
+          messageKey
+        )
+      ) {
         return;
       }
 
-      pendingMessagesRef.current.set(messageKey, Date.now());
+      pendingMessagesRef.current.set(
+        messageKey,
+        Date.now()
+      );
 
       setTimeout(() => {
-        pendingMessagesRef.current.delete(messageKey);
+        pendingMessagesRef.current.delete(
+          messageKey
+        );
       }, 1000);
 
-      // Update messages state
+      // ========================================================
+      // UPDATE MESSAGES
+      // ========================================================
+
       setMessages((prev) => {
         const exists = prev.some(
           (m) =>
-            (m._id && m._id === msg._id) ||
-            (m.tempId && m.tempId === msg.tempId),
+            (m._id &&
+              m._id === msg._id) ||
+            (m.tempId &&
+              m.tempId === msg.tempId)
         );
 
         if (exists) {
@@ -249,27 +446,63 @@ export default function Dashboard() {
         return [...prev, msg];
       });
 
-      // Update chat last message and unread count
+      // ========================================================
+      // UPDATE CHAT
+      // ========================================================
+
       const senderName =
-        typeof msg.sender === "object" ? msg.sender.name : "User";
-      updateChatLastMessage(msg.chatId, msg.text, senderId, senderName);
+        typeof msg.sender === "object"
+          ? msg.sender.name
+          : "User";
 
-      // Show toast for incoming messages when not in current chat
-      const isCurrentChat = msg.chatId === selectedChat?.id;
-      const shouldShowToast = !isCurrentChat && !isOwnMessage;
-      const toastKey = `${msg.chatId}_${msg.createdAt || Date.now()}`;
+      updateChatLastMessage(
+        msg.chatId,
+        msg.text,
+        senderId,
+        senderName
+      );
 
-      if (shouldShowToast && !toastShownRef.current.has(toastKey)) {
-        toastShownRef.current.add(toastKey);
+      // ========================================================
+      // TOAST
+      // ========================================================
+
+      const isCurrentChat =
+        msg.chatId === selectedChat?.id;
+
+      const shouldShowToast =
+        !isCurrentChat &&
+        !isOwnMessage;
+
+      const toastKey = `${
+        msg.chatId
+      }_${msg.createdAt || Date.now()}`;
+
+      if (
+        shouldShowToast &&
+        !toastShownRef.current.has(
+          toastKey
+        )
+      ) {
+        toastShownRef.current.add(
+          toastKey
+        );
 
         setTimeout(() => {
-          toastShownRef.current.delete(toastKey);
+          toastShownRef.current.delete(
+            toastKey
+          );
         }, 1000);
 
-        const sender = typeof msg.sender === "object" ? msg.sender : null;
-        const toastSenderName = sender?.name || "New Message";
+        const sender =
+          typeof msg.sender === "object"
+            ? msg.sender
+            : null;
 
-        let imageUrl = getProfileImageUrl(sender);
+        const toastSenderName =
+          sender?.name || "New Message";
+
+        let imageUrl =
+          getProfileImageUrl(sender);
 
         if (!imageUrl) {
           imageUrl = `https://api.dicebear.com/7.x/personas/svg?seed=${senderId}`;
@@ -278,15 +511,26 @@ export default function Dashboard() {
         toast.custom((t) => (
           <div
             className={`${
-              t.visible ? "animate-enter" : "animate-leave"
+              t.visible
+                ? "animate-enter"
+                : "animate-leave"
             } max-w-sm w-full bg-white shadow-xl rounded-xl flex items-center gap-3 p-3 border cursor-pointer`}
             onClick={() => {
-              // Find and select the chat when toast is clicked
-              const chatToSelect = chats.find((chat) => chat.id === msg.chatId);
+              const chatToSelect =
+                chats.find(
+                  (chat) =>
+                    chat.id ===
+                    msg.chatId
+                );
+
               if (chatToSelect) {
-                setSelectedChat(chatToSelect);
+                setSelectedChat(
+                  chatToSelect
+                );
+
                 setMobileView("chat");
               }
+
               toast.dismiss(t.id);
             }}
           >
@@ -298,30 +542,55 @@ export default function Dashboard() {
                 e.target.src = `https://api.dicebear.com/7.x/personas/svg?seed=${senderId}`;
               }}
             />
+
             <div className="flex flex-col flex-1">
               <p className="text-sm font-semibold text-[#7B61FF]">
                 {toastSenderName}
               </p>
-              <p className="text-xs text-gray-500 truncate">{msg.text}</p>
+
+              <p className="text-xs text-gray-500 truncate">
+                {msg.text}
+              </p>
             </div>
-            <span className="text-[10px] text-gray-400">now</span>
+
+            <span className="text-[10px] text-gray-400">
+              now
+            </span>
           </div>
         ));
       }
     };
 
-    socket.on("receive_message", handleMessage);
+    socket.on(
+      "receive_message",
+      handleMessage
+    );
 
     return () => {
-      socket.off("receive_message", handleMessage);
+      socket.off(
+        "receive_message",
+        handleMessage
+      );
     };
-  }, [user, selectedChat, chats]);
+  }, [
+    user,
+    selectedChat,
+    chats,
+  ]);
 
-  // ================= SEND MESSAGE =================
+  // ============================================================
+  // SEND MESSAGE
+  // ============================================================
+
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedChat?.id || !user?._id) return;
+    if (
+      !newMessage.trim() ||
+      !selectedChat?.id ||
+      !user?._id
+    ) {
+      return;
+    }
 
-    // Play sent sound
     playSound(sentSoundRef);
 
     const tempId = `temp_${Date.now()}_${Math.random()}`;
@@ -330,8 +599,9 @@ export default function Dashboard() {
       chatId: selectedChat.id,
       sender: user._id,
       text: newMessage,
-      createdAt: new Date().toISOString(),
-      tempId: tempId,
+      createdAt:
+        new Date().toISOString(),
+      tempId,
     };
 
     const localMsg = {
@@ -341,193 +611,536 @@ export default function Dashboard() {
       sender: user._id,
     };
 
-    setMessages((prev) => [...prev, localMsg]);
+    setMessages((prev) => [
+      ...prev,
+      localMsg,
+    ]);
 
-    // Immediately update the chat list with the new message
-    updateChatLastMessage(selectedChat.id, newMessage, user._id, user.name);
+    updateChatLastMessage(
+      selectedChat.id,
+      newMessage,
+      user._id,
+      user.name
+    );
 
-    socket.emit("send_message", msg);
+    socket.emit(
+      "send_message",
+      msg
+    );
 
     setNewMessage("");
   };
 
-  // ================= START CHAT =================
-  const handleStartChat = async (contact) => {
-    if (!contact?._id || !user?._id) return;
+  // ============================================================
+  // START CHAT
+  // ============================================================
 
-    const existing = chats.find(
-      (c) => !c.isGroup && c.members?.some((m) => m._id === contact._id),
-    );
-
-    if (existing) {
-      setSelectedChat(existing);
-      setShowModal(false);
+  const handleStartChat = async (
+    contact
+  ) => {
+    if (
+      !contact?._id ||
+      !user?._id
+    ) {
       return;
     }
 
-    const res = await axios.post(`${API_BASE_URL}/api/chats`, {
-      senderId: user._id,
-      receiverId: contact._id,
-    });
-
-    const newChat = {
-      ...res.data,
-      id: res.data._id,
-      name: contact.name,
-      lastMessage: "",
-      updatedAt: new Date(),
-      unreadCount: 0,
-    };
-
-    setChats((prev) => sortChats([newChat, ...prev]));
-    setSelectedChat(newChat);
-    setShowModal(false);
-  };
-
-  // ================= CREATE GROUP =================
-  const createGroup = async (name, list) => {
-    if (!name?.trim() || !list?.length) return;
-
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/chats/group`, {
-        name: name.trim(),
-        members: [user._id, ...list.map((u) => u._id)],
-      });
+      // ========================================================
+      // CHECK EXISTING CHAT
+      // ========================================================
 
-      const group = {
+      const existing = chats.find(
+        (c) =>
+          !c.isGroup &&
+          c.members?.some(
+            (m) =>
+              m._id ===
+              contact._id
+          )
+      );
+
+      if (existing) {
+        setSelectedChat(existing);
+        setShowModal(false);
+
+        // Mobile opens chat
+        setMobileView("chat");
+
+        return;
+      }
+
+      // ========================================================
+      // CREATE NEW CHAT
+      // ========================================================
+
+      const res =
+        await axios.post(
+          `${API_BASE_URL}/api/chats`,
+          {
+            senderId: user._id,
+            receiverId:
+              contact._id,
+          }
+        );
+
+      const newChat = {
         ...res.data,
+
         id: res.data._id,
+
+        name: contact.name,
+
         lastMessage: "",
-        updatedAt: new Date(),
-        isGroup: true,
+
+        updatedAt:
+          new Date(),
+
         unreadCount: 0,
       };
 
-      setChats((prev) => sortChats([group, ...prev]));
-      setSelectedChat(group);
+      // ========================================================
+      // UPDATE CHAT LIST
+      // ========================================================
 
-      // Reset group form
-      setGroupName("");
-      setSelectedUsers([]);
+      setChats((prev) =>
+        sortChats([
+          newChat,
+          ...prev,
+        ])
+      );
 
-      // Close modal
-      setShowGroupModal(false);
+      // ========================================================
+      // SELECT CHAT
+      // ========================================================
 
-      // Open chat view on mobile
+      setSelectedChat(
+        newChat
+      );
+
+      // ========================================================
+      // CLOSE MODAL
+      // ========================================================
+
+      setShowModal(false);
+
+      // ========================================================
+      // MOBILE OPEN CHAT
+      // ========================================================
+
       setMobileView("chat");
     } catch (error) {
-      console.error("Error creating group:", error);
+      console.error(
+        "Error starting chat:",
+        error
+      );
 
-      toast.error(error.response?.data?.message || "Failed to create group");
+      toast.error(
+        error.response?.data
+          ?.message ||
+          "Failed to start conversation"
+      );
     }
   };
 
-  // ================= HANDLE FLOATING CHAT MESSAGE =================
-  const handleFloatingChatMessage = (message) => {
-    if (!message || !selectedChat?.id) return;
+  // ============================================================
+  // CREATE GROUP
+  // ============================================================
 
-    // Update the chat list with the message from FloatingChat
-    updateChatLastMessage(selectedChat.id, message.text, user._id, user.name);
+  const createGroup = async (
+    name,
+    list
+  ) => {
+    if (
+      !name?.trim() ||
+      !list?.length
+    ) {
+      return;
+    }
+
+    try {
+      const res =
+        await axios.post(
+          `${API_BASE_URL}/api/chats/group`,
+          {
+            name: name.trim(),
+            members: [
+              user._id,
+              ...list.map(
+                (u) => u._id
+              ),
+            ],
+          }
+        );
+
+      const group = {
+        ...res.data,
+
+        id: res.data._id,
+
+        lastMessage: "",
+
+        updatedAt:
+          new Date(),
+
+        isGroup: true,
+
+        unreadCount: 0,
+      };
+
+      setChats((prev) =>
+        sortChats([
+          group,
+          ...prev,
+        ])
+      );
+
+      setSelectedChat(
+        group
+      );
+
+      setGroupName("");
+      setSelectedUsers([]);
+
+      setShowGroupModal(
+        false
+      );
+
+      setMobileView("chat");
+    } catch (error) {
+      console.error(
+        "Error creating group:",
+        error
+      );
+
+      toast.error(
+        error.response?.data
+          ?.message ||
+          "Failed to create group"
+      );
+    }
   };
 
-  if (!user) return <div className="p-5">Loading...</div>;
+  // ============================================================
+  // FLOATING CHAT MESSAGE
+  // ============================================================
+
+  const handleFloatingChatMessage = (
+    message
+  ) => {
+    if (
+      !message ||
+      !selectedChat?.id
+    ) {
+      return;
+    }
+
+    updateChatLastMessage(
+      selectedChat.id,
+      message.text,
+      user._id,
+      user.name
+    );
+  };
+
+  // ============================================================
+  // LOADING
+  // ============================================================
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F7FB]">
+        <div className="text-gray-500">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // CHAT ACTIONS
+  // ============================================================
 
   const muteChat = (chat) => {
     setChats((prev) =>
-      prev.map((c) => (c.id === chat.id ? { ...c, muted: !c.muted } : c)),
+      prev.map((c) =>
+        c.id === chat.id
+          ? {
+              ...c,
+              muted: !c.muted,
+            }
+          : c
+      )
     );
   };
 
   const archiveChat = (chat) => {
     setChats((prev) =>
-      prev.map((c) => (c.id === chat.id ? { ...c, archived: !c.archived } : c)),
+      prev.map((c) =>
+        c.id === chat.id
+          ? {
+              ...c,
+              archived:
+                !c.archived,
+            }
+          : c
+      )
     );
   };
 
   const deleteChat = (chat) => {
-    setChats((prev) => prev.filter((c) => c.id !== chat.id));
+    setChats((prev) =>
+      prev.filter(
+        (c) =>
+          c.id !== chat.id
+      )
+    );
 
-    if (selectedChat?.id === chat.id) {
+    if (
+      selectedChat?.id ===
+      chat.id
+    ) {
       setSelectedChat(null);
+
+      if (chats.length <= 1) {
+        setMobileView("empty");
+      } else {
+        setMobileView("list");
+      }
     }
   };
 
-  const restoreChat = async (chat) => {
+  const restoreChat = async (
+    chat
+  ) => {
     try {
-      await fetch(`${API_BASE_URL}/chat/restore/${chat._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      await fetch(
+        `${API_BASE_URL}/chat/restore/${chat._id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+        }
+      );
 
-      // add back to UI if missing
       setChats((prev) => {
-        const exists = prev.find((c) => c._id === chat._id);
-        if (exists) return prev;
-        return [chat, ...prev];
+        const exists =
+          prev.find(
+            (c) =>
+              c._id ===
+              chat._id
+          );
+
+        if (exists) {
+          return prev;
+        }
+
+        return [
+          chat,
+          ...prev,
+        ];
       });
-    } catch (err) {
-      console.error("Restore failed:", err);
+    } catch (error) {
+      console.error(
+        "Restore failed:",
+        error
+      );
     }
   };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
-    <div className="flex h-screen bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]">
+    <div className="flex h-screen overflow-hidden bg-gradient-to-b from-[#9F6BFF] to-[#7B61FF]">
+      {/* ========================================================
+          SIDEBAR
+      ======================================================== */}
+
       <SideBar
         user={user}
         setShowModal={setShowModal}
-        setShowGroupModal={setShowGroupModal}
-        showSidebar={showSidebar}
-        setShowSidebar={setShowSidebar}
+        setShowGroupModal={
+          setShowGroupModal
+        }
+        showSidebar={
+          showSidebar
+        }
+        setShowSidebar={
+          setShowSidebar
+        }
       />
 
-      <main className="flex flex-1">
+      {/* ========================================================
+          MAIN
+      ======================================================== */}
+
+      <main className="flex flex-1 min-w-0 overflow-hidden">
         <Routes>
+          {/* ====================================================
+              CHATS
+          ==================================================== */}
+
           <Route
             path="chats"
             element={
-              <>
+              <div className="flex flex-1 min-w-0 h-full">
+                {/* =================================================
+                    CHAT LIST
+
+                    MOBILE:
+                    Hide when there are no chats or when viewing chat.
+
+                    DESKTOP:
+                    Always show.
+                ================================================== */}
+
                 <ChatList
                   chats={chats}
-                  setChats={setChats} // ✅ ADD THIS
+                  setChats={setChats}
                   user={user}
                   users={users}
-                  onChatMenuOpen={setChatMenu}
-                  setShowSidebar={setShowSidebar}
-                  setSelectedChat={(chat) => {
-                    setSelectedChat(chat);
-                    setMobileView("chat");
-                  }}
-                  className={
-                    mobileView === "chat" ? "hidden md:block" : "block md:block"
+                  selectedChat={
+                    selectedChat
                   }
+                  setSelectedChat={(
+                    chat
+                  ) => {
+                    setSelectedChat(
+                      chat
+                    );
+
+                    setMobileView(
+                      "chat"
+                    );
+                  }}
+                  onChatMenuOpen={
+                    setChatMenu
+                  }
+                  setShowSidebar={
+                    setShowSidebar
+                  }
+                  onAddContact={() =>
+                    setShowModal(
+                      true
+                    )
+                  }
+                  loading={
+                    loadingChats
+                  }
+                  className={`
+                    ${
+                      mobileView ===
+                      "chat"
+                        ? "hidden md:flex"
+                        : ""
+                    }
+                    ${
+                      mobileView ===
+                        "empty" &&
+                      chats.length ===
+                        0
+                        ? "hidden md:flex"
+                        : ""
+                    }
+                  `}
                 />
+
+                {/* =================================================
+                    CHAT ACTION MENU
+                ================================================== */}
 
                 <ChatActionMenu
                   menu={chatMenu}
                   setMenu={setChatMenu}
-                  onOpenChat={(chat) => setSelectedChat(chat)}
-                  onMuteChat={muteChat}
-                  onArchiveChat={archiveChat}
-                  onDeleteChat={deleteChat}
-                  onRestoreChat={restoreChat} // now works
+                  onOpenChat={(
+                    chat
+                  ) => {
+                    setSelectedChat(
+                      chat
+                    );
+
+                    setMobileView(
+                      "chat"
+                    );
+                  }}
+                  onMuteChat={
+                    muteChat
+                  }
+                  onArchiveChat={
+                    archiveChat
+                  }
+                  onDeleteChat={
+                    deleteChat
+                  }
+                  onRestoreChat={
+                    restoreChat
+                  }
                 />
 
+                {/* =================================================
+                    CHAT WINDOW
+
+                    MOBILE:
+                    Show empty state when there are no chats.
+                    Show chat when a chat is selected.
+
+                    DESKTOP:
+                    Always show.
+                ================================================== */}
+
                 <ChatWindow
-                  selectedChat={selectedChat}
-                  messages={messages}
-                  newMessage={newMessage}
-                  setNewMessage={setNewMessage}
-                  handleSendMessage={handleSendMessage}
+                  selectedChat={
+                    selectedChat
+                  }
+                  messages={
+                    messages
+                  }
+                  newMessage={
+                    newMessage
+                  }
+                  setNewMessage={
+                    setNewMessage
+                  }
+                  handleSendMessage={
+                    handleSendMessage
+                  }
                   user={user}
-                  setShowSidebar={setShowSidebar}
-                  setMobileView={setMobileView}
-                  className={mobileView === "list" ? "hidden md:flex" : "flex"}
+                  setShowSidebar={
+                    setShowSidebar
+                  }
+                  setMobileView={
+                    setMobileView
+                  }
+                  onAddContact={() =>
+                    setShowModal(
+                      true
+                    )
+                  }
+                  loading={
+                    loadingChats
+                  }
+                  className={`
+                    ${
+                      mobileView ===
+                        "list" &&
+                      chats.length >
+                        0
+                        ? "hidden md:flex"
+                        : "flex"
+                    }
+                  `}
                 />
-              </>
+              </div>
             }
           />
+
+          {/* ====================================================
+              SETTINGS
+          ==================================================== */}
 
           <Route
             path="settings"
@@ -535,49 +1148,106 @@ export default function Dashboard() {
               <Settings
                 user={user}
                 setUser={setUser}
-                soundEnabled={soundEnabled}
-                setShowSidebar={setShowSidebar}
+                soundEnabled={
+                  soundEnabled
+                }
+                setShowSidebar={
+                  setShowSidebar
+                }
                 toggleSound={() => {
-                  const newValue = !soundEnabled;
-                  setSoundEnabled(newValue);
-                  localStorage.setItem("soundEnabled", newValue);
+                  const newValue =
+                    !soundEnabled;
+
+                  setSoundEnabled(
+                    newValue
+                  );
+
+                  localStorage.setItem(
+                    "soundEnabled",
+                    newValue
+                  );
                 }}
               />
             }
           />
 
-          <Route path="*" element={<Navigate to="chats" />} />
+          {/* ====================================================
+              DEFAULT
+          ==================================================== */}
+
+          <Route
+            path="*"
+            element={
+              <Navigate to="chats" />
+            }
+          />
         </Routes>
       </main>
+
+      {/* ========================================================
+          FLOATING CHAT
+      ======================================================== */}
 
       {user && (
         <FloatingChat
           user={user}
-          selectedChat={selectedChat}
+          selectedChat={
+            selectedChat
+          }
           socket={socket}
-          onMessageSent={handleFloatingChatMessage}
+          onMessageSent={
+            handleFloatingChatMessage
+          }
         />
       )}
+
+      {/* ========================================================
+          ADD CONTACT MODAL
+      ======================================================== */}
 
       {showModal && (
         <AddContactModal
           users={users}
           search={search}
           setSearch={setSearch}
-          startChat={handleStartChat}
-          closeModal={() => setShowModal(false)}
+          startChat={
+            handleStartChat
+          }
+          closeModal={() =>
+            setShowModal(
+              false
+            )
+          }
         />
       )}
+
+      {/* ========================================================
+          GROUP MODAL
+      ======================================================== */}
 
       {showGroupModal && (
         <GroupModal
           users={users}
-          groupName={groupName}
-          setGroupName={setGroupName}
-          selectedUsers={selectedUsers}
-          setSelectedUsers={setSelectedUsers}
-          createGroup={createGroup}
-          closeModal={() => setShowGroupModal(false)}
+          groupName={
+            groupName
+          }
+          setGroupName={
+            setGroupName
+          }
+          selectedUsers={
+            selectedUsers
+          }
+          setSelectedUsers={
+            setSelectedUsers
+          }
+          createGroup={
+            createGroup
+          }
+          closeModal={() =>
+            setShowGroupModal(
+              false
+            )
+          }
         />
       )}
     </div>
