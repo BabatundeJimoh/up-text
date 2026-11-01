@@ -4,7 +4,7 @@
   "released_at": "2026-11-01",
   "summary": {
     "title": "Up-Text Chat Application",
-    "owner": "Tunde",
+    "owner": "Benjamin Kofi Jimoh",
     "description": "A real-time messaging application that allows users to register, log in, send private messages, create group chats and exchange messages using React, Node.js, MongoDB and Socket.IO.",
     "id": 0
   },
