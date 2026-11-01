@@ -21,16 +21,16 @@
         "cells": [
           {
             "position": {
-              "x": 102.5,
-              "y": -390
+              "x": 70,
+              "y": 60
             },
             "size": {
-              "width": 130,
-              "height": 80
+              "width": 112.5,
+              "height": 60
             },
             "attrs": {
               "text": {
-                "text": "User"
+                "text": "Chat User"
               },
               "body": {
                 "stroke": "#333333",
@@ -106,27 +106,27 @@
               "items": [
                 {
                   "group": "top",
-                  "id": "182af418-f6ef-4eb7-81dc-5eaedcd23d5c"
+                  "id": "db6d8022-965c-4f27-b34a-a83919dfcf0b"
                 },
                 {
                   "group": "right",
-                  "id": "89199ff6-05d4-4bf9-ad2e-fa13c908befa"
+                  "id": "1835f09e-01d8-4628-90ae-88ce8e40d2dd"
                 },
                 {
                   "group": "bottom",
-                  "id": "50ce894a-748a-42b2-a329-793a1c01fee9"
+                  "id": "a38e4d25-fd8e-4e2a-82ac-8757a2e3b325"
                 },
                 {
                   "group": "left",
-                  "id": "f1520ae2-355d-4f4b-950e-68bb0fc20096"
+                  "id": "0bc6f358-baa1-42b9-9b63-eba609bff66b"
                 }
               ]
             },
-            "id": "827bb736-4bfa-45db-b5fd-5a1b7d84704e",
-            "zIndex": 1,
+            "id": "c4ced3e1-dfa7-4fa3-b12f-a0d50a617e72",
+            "zIndex": 2,
             "data": {
               "type": "tm.Actor",
-              "name": "User",
+              "name": "Chat User",
               "description": "A person who uses Up-Text to register, log in, send and receive messages.",
               "isTrustBoundary": false,
               "outOfScope": false,
@@ -135,6 +135,515 @@
               "providesAuthentication": false,
               "threats": []
             }
+          },
+          {
+            "position": {
+              "x": 410,
+              "y": 50
+            },
+            "size": {
+              "width": 130,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "React Frontend"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "55ff8883-104e-46e4-8efe-d38db8a8b6ef"
+                },
+                {
+                  "group": "right",
+                  "id": "e0cb3b8d-11e1-4860-b8ab-f3bb38e161e3"
+                },
+                {
+                  "group": "bottom",
+                  "id": "3a27d22b-26c4-47fb-8121-bd0928a38fae"
+                },
+                {
+                  "group": "left",
+                  "id": "47832d77-2fd3-4b65-919a-4d2f6935b4ff"
+                }
+              ]
+            },
+            "id": "3d7e67ba-d068-45e9-8c2b-4ab2d378d51f",
+            "zIndex": 3,
+            "data": {
+              "type": "tm.Process",
+              "name": "React Frontend",
+              "description": "The user interface where users register, log in and exchange messages.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "handlesCardPayment": false,
+              "handlesGoodsOrServices": false,
+              "isWebApplication": false,
+              "privilegeLevel": "",
+              "threats": []
+            }
+          },
+          {
+            "position": {
+              "x": 798,
+              "y": 50
+            },
+            "size": {
+              "width": 120,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "Node.js Backend"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "55ff8883-104e-46e4-8efe-d38db8a8b6ef"
+                },
+                {
+                  "group": "right",
+                  "id": "e0cb3b8d-11e1-4860-b8ab-f3bb38e161e3"
+                },
+                {
+                  "group": "bottom",
+                  "id": "3a27d22b-26c4-47fb-8121-bd0928a38fae"
+                },
+                {
+                  "group": "left",
+                  "id": "47832d77-2fd3-4b65-919a-4d2f6935b4ff"
+                }
+              ]
+            },
+            "id": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
+            "zIndex": 4,
+            "data": {
+              "type": "tm.Process",
+              "name": "Node.js Backend",
+              "description": "Stores user accounts, chat information and messages.",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "handlesCardPayment": false,
+              "handlesGoodsOrServices": false,
+              "isWebApplication": false,
+              "privilegeLevel": "",
+              "threats": []
+            }
+          },
+          {
+            "position": {
+              "x": 1129,
+              "y": 60
+            },
+            "size": {
+              "width": 112.5,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "MongoDB"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "actor",
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "db6d8022-965c-4f27-b34a-a83919dfcf0b"
+                },
+                {
+                  "group": "right",
+                  "id": "1835f09e-01d8-4628-90ae-88ce8e40d2dd"
+                },
+                {
+                  "group": "bottom",
+                  "id": "a38e4d25-fd8e-4e2a-82ac-8757a2e3b325"
+                },
+                {
+                  "group": "left",
+                  "id": "0bc6f358-baa1-42b9-9b63-eba609bff66b"
+                }
+              ]
+            },
+            "id": "e839f7d8-f213-4809-8da3-dd8160515d19",
+            "zIndex": 5,
+            "data": {
+              "type": "tm.Actor",
+              "name": "MongoDB",
+              "description": "Stores user accounts, chat information and messages.",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "providesAuthentication": false,
+              "threats": []
+            },
+            "children": []
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Data Flow",
+              "description": "",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": [],
+              "trustBoundaryIds": []
+            },
+            "labels": [
+              "Data Flow"
+            ],
+            "id": "1b67ae8b-44dd-4042-b1f9-d3f7e1d9c7bd",
+            "source": {
+              "cell": "3d7e67ba-d068-45e9-8c2b-4ab2d378d51f",
+              "port": "e0cb3b8d-11e1-4860-b8ab-f3bb38e161e3"
+            },
+            "target": {
+              "cell": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
+              "port": "47832d77-2fd3-4b65-919a-4d2f6935b4ff"
+            },
+            "vertices": [
+              {
+                "x": 740,
+                "y": 91
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Data Flow",
+              "description": "",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": [],
+              "trustBoundaryIds": []
+            },
+            "labels": [
+              "Data Flow"
+            ],
+            "id": "7445c362-6131-4a86-bc6c-dcf0f200cdb8",
+            "source": {
+              "cell": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
+              "port": "e0cb3b8d-11e1-4860-b8ab-f3bb38e161e3"
+            },
+            "target": {
+              "cell": "e839f7d8-f213-4809-8da3-dd8160515d19",
+              "port": "0bc6f358-baa1-42b9-9b63-eba609bff66b"
+            },
+            "vertices": [
+              {
+                "x": 1060,
+                "y": 87
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Data Flow",
+              "description": "",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": [],
+              "trustBoundaryIds": []
+            },
+            "labels": [
+              "Data Flow"
+            ],
+            "id": "4f70c1ad-672b-4908-97a4-abee6250eb78",
+            "source": {
+              "cell": "c4ced3e1-dfa7-4fa3-b12f-a0d50a617e72",
+              "port": "1835f09e-01d8-4628-90ae-88ce8e40d2dd"
+            },
+            "target": {
+              "cell": "3d7e67ba-d068-45e9-8c2b-4ab2d378d51f",
+              "port": "47832d77-2fd3-4b65-919a-4d2f6935b4ff"
+            },
+            "vertices": []
           }
         ]
       }
