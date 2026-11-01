@@ -202,7 +202,7 @@
                   "id": "4c391087-4ead-4a50-b830-fdfe29cceb98",
                   "title": "Identity Impersonation",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Spoofing",
                   "description": "An attacker may pretend to be a legitimate Up-Text user by using stolen login credentials to gain unauthorized access to another user's account.",
                   "mitigation": "Implement strong authentication, secure password hashing and multi-factor authentication.",
@@ -213,7 +213,7 @@
                 }
               ],
               "threatFrequency": {
-                "spoofing": 1,
+                "spoofing": 2,
                 "repudiation": 0
               }
             }
@@ -340,7 +340,7 @@
                   "id": "3d260fb7-375b-4803-927b-8943c095ea3a",
                   "title": "Session Hijacking",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Spoofing",
                   "description": "An attacker may steal a user's authentication token and use it to access the user's Up-Text account without permission.",
                   "mitigation": "Use HTTPS, secure token storage, token expiration and proper session management.",
@@ -351,7 +351,7 @@
                 }
               ],
               "threatFrequency": {
-                "spoofing": 1,
+                "spoofing": 2,
                 "tampering": 0,
                 "repudiation": 0,
                 "informationDisclosure": 0,
@@ -399,7 +399,7 @@
                   "id": "3400cb76-d429-472b-97e7-762c0f3cce61",
                   "title": "Request Manipulation",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Tampering",
                   "description": "An attacker may modify API requests sent from the React frontend to the Node.js backend to change information or perform unauthorized actions.",
                   "mitigation": "Implement server-side input validation, authorization checks and HTTPS encryption.",
@@ -411,7 +411,7 @@
               ],
               "trustBoundaryIds": [],
               "threatFrequency": {
-                "tampering": 1,
+                "tampering": 2,
                 "informationDisclosure": 0,
                 "denialOfService": 0
               }
@@ -600,7 +600,7 @@
           {
             "position": {
               "x": 850,
-              "y": 60
+              "y": 49.999999999999986
             },
             "size": {
               "width": 130,
@@ -716,7 +716,7 @@
                   "id": "6e39bb19-d762-400b-a584-91f49f161a4b",
                   "title": "Unauthorized Message Modification",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Spoofing",
                   "description": "An attacker may modify stored or transmitted messages without the sender's or receiver's permission.",
                   "mitigation": "Implement proper access controls, message integrity checks and secure database permissions.",
@@ -729,7 +729,7 @@
                   "id": "d5a51857-9758-4e9d-9894-9bc20509081f",
                   "title": "Message Sending Denial",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "Medium",
                   "type": "Repudiation",
                   "description": "A user may deny sending a particular message because the application does not maintain sufficient records to prove who sent it.",
                   "mitigation": "Maintain secure audit logs containing sender ID, message ID, timestamp and relevant activity records.",
@@ -742,7 +742,7 @@
                   "id": "b52e6d76-ef8a-4011-90ea-4e77227a9ab3",
                   "title": "Unauthorized Action Denial",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "Medium",
                   "type": "Repudiation",
                   "description": "A user or administrator may deny performing an action, such as deleting a chat or changing account settings, when the system does not maintain reliable activity records.",
                   "mitigation": "Implement tamper-resistant audit logs that record important user and administrator activities.",
@@ -755,7 +755,7 @@
                   "id": "1f0288f5-a209-44d6-a720-38c26f6dcd73",
                   "title": "Server Flooding",
                   "status": "NotApplicable",
-                  "severity": "TBD",
+                  "severity": "Medium",
                   "type": "Spoofing",
                   "description": "An attacker may send excessive requests to the Node.js server, causing it to become overloaded and unavailable to legitimate users.",
                   "mitigation": "Implement rate limiting, request throttling and traffic monitoring.",
@@ -768,7 +768,7 @@
                   "id": "260a5956-fd22-47eb-95bd-ed5ef56d8d43",
                   "title": "Resource Exhaustion",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Repudiation",
                   "description": "A normal user may exploit weaknesses in authorization controls to gain administrator privileges.",
                   "mitigation": "Implement role-based access control and verify permissions on the server.",
@@ -779,8 +779,8 @@
                 }
               ],
               "threatFrequency": {
-                "spoofing": 3,
-                "repudiation": 3
+                "spoofing": 5,
+                "repudiation": 6
               }
             }
           },
@@ -903,7 +903,7 @@
                   "id": "1d085118-7c33-41f0-ac76-642d2422c8b3",
                   "title": "Unauthorized Database Access",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Spoofing",
                   "description": "An attacker may gain unauthorized access to the MongoDB database and expose sensitive information such as user details, passwords and private messages.",
                   "mitigation": "Use strong database authentication, role-based access control, encryption and secure database configuration.",
@@ -916,7 +916,7 @@
                   "id": "9f8299e8-8904-43f4-ad95-a93351802763",
                   "title": "Private Message Leakage",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Repudiation",
                   "description": "Private messages may be exposed to unauthorized users due to weak access controls or improper authorization checks.",
                   "mitigation": "Implement proper message access permissions, HTTPS encryption and server-side authorization checks to ensure only chat participants can access messages.",
@@ -929,7 +929,7 @@
                   "id": "aa909ea4-0223-4f1a-80da-ba266336ed6a",
                   "title": "Unauthorized Database Access",
                   "status": "Open",
-                  "severity": "TBD",
+                  "severity": "High",
                   "type": "Spoofing",
                   "description": "An attacker may obtain higher database privileges and access or modify information without authorization.",
                   "mitigation": "Apply least-privilege database permissions, strong authentication and regular access reviews.",
@@ -940,11 +940,18 @@
                 }
               ],
               "threatFrequency": {
-                "spoofing": 2,
-                "repudiation": 1
+                "spoofing": 4,
+                "repudiation": 2
               }
             },
-            "children": []
+            "children": [],
+            "tools": {
+              "items": [
+                "boundary",
+                "button-remove"
+              ],
+              "name": null
+            }
           },
           {
             "shape": "flow",
