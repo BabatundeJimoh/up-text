@@ -944,14 +944,7 @@
                 "repudiation": 2
               }
             },
-            "children": [],
-            "tools": {
-              "items": [
-                "boundary",
-                "button-remove"
-              ],
-              "name": null
-            }
+            "children": []
           },
           {
             "shape": "flow",
