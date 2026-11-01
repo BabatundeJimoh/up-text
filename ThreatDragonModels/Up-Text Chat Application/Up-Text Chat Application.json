@@ -138,8 +138,8 @@
           },
           {
             "position": {
-              "x": 400,
-              "y": 40
+              "x": 410,
+              "y": 50
             },
             "size": {
               "width": 130,
@@ -257,126 +257,6 @@
             }
           },
           {
-            "position": {
-              "x": 808,
-              "y": 40
-            },
-            "size": {
-              "width": 120,
-              "height": 80
-            },
-            "attrs": {
-              "text": {
-                "text": "Node.js Backend"
-              },
-              "body": {
-                "stroke": "#333333",
-                "strokeWidth": 1.5,
-                "strokeDasharray": null
-              }
-            },
-            "visible": true,
-            "shape": "process",
-            "ports": {
-              "groups": {
-                "top": {
-                  "position": "top",
-                  "attrs": {
-                    "circle": {
-                      "r": 4,
-                      "magnet": true,
-                      "stroke": "#5F95FF",
-                      "strokeWidth": 1,
-                      "fill": "#fff",
-                      "style": {
-                        "visibility": "hidden"
-                      }
-                    }
-                  }
-                },
-                "right": {
-                  "position": "right",
-                  "attrs": {
-                    "circle": {
-                      "r": 4,
-                      "magnet": true,
-                      "stroke": "#5F95FF",
-                      "strokeWidth": 1,
-                      "fill": "#fff",
-                      "style": {
-                        "visibility": "hidden"
-                      }
-                    }
-                  }
-                },
-                "bottom": {
-                  "position": "bottom",
-                  "attrs": {
-                    "circle": {
-                      "r": 4,
-                      "magnet": true,
-                      "stroke": "#5F95FF",
-                      "strokeWidth": 1,
-                      "fill": "#fff",
-                      "style": {
-                        "visibility": "hidden"
-                      }
-                    }
-                  }
-                },
-                "left": {
-                  "position": "left",
-                  "attrs": {
-                    "circle": {
-                      "r": 4,
-                      "magnet": true,
-                      "stroke": "#5F95FF",
-                      "strokeWidth": 1,
-                      "fill": "#fff",
-                      "style": {
-                        "visibility": "hidden"
-                      }
-                    }
-                  }
-                }
-              },
-              "items": [
-                {
-                  "group": "top",
-                  "id": "55ff8883-104e-46e4-8efe-d38db8a8b6ef"
-                },
-                {
-                  "group": "right",
-                  "id": "e0cb3b8d-11e1-4860-b8ab-f3bb38e161e3"
-                },
-                {
-                  "group": "bottom",
-                  "id": "3a27d22b-26c4-47fb-8121-bd0928a38fae"
-                },
-                {
-                  "group": "left",
-                  "id": "47832d77-2fd3-4b65-919a-4d2f6935b4ff"
-                }
-              ]
-            },
-            "id": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
-            "zIndex": 4,
-            "data": {
-              "type": "tm.Process",
-              "name": "Node.js Backend",
-              "description": "Stores user accounts, chat information and messages.",
-              "outOfScope": false,
-              "isTrustBoundary": false,
-              "reasonOutOfScope": "",
-              "hasOpenThreats": false,
-              "handlesCardPayment": false,
-              "handlesGoodsOrServices": false,
-              "isWebApplication": false,
-              "privilegeLevel": "",
-              "threats": []
-            }
-          },
-          {
             "shape": "flow",
             "attrs": {
               "line": {
@@ -423,10 +303,57 @@
             },
             "vertices": [
               {
-                "x": 330,
+                "x": 260,
                 "y": 90
               }
             ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "\tAPI Requests",
+              "description": "",
+              "outOfScope": false,
+              "isTrustBoundary": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": [],
+              "trustBoundaryIds": []
+            },
+            "labels": [
+              "\tAPI Requests"
+            ],
+            "id": "36bf6ef0-db26-487d-86e0-7d8bd48a6d87",
+            "source": {
+              "x": 530,
+              "y": 90
+            },
+            "target": {
+              "x": 810,
+              "y": 90
+            },
+            "vertices": []
           },
           {
             "shape": "flow",
@@ -464,10 +391,10 @@
             "labels": [
               "API Responses"
             ],
-            "id": "69689e7a-c038-4270-ab1d-2644ed90b5d8",
+            "id": "c6e7866e-37ee-4eb6-8e0d-16fcb6588c19",
             "source": {
-              "cell": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
-              "port": "3a27d22b-26c4-47fb-8121-bd0928a38fae"
+              "cell": "f39ce26c-8ff5-4490-83b8-3161a18c22f6",
+              "port": "a38e4d25-fd8e-4e2a-82ac-8757a2e3b325"
             },
             "target": {
               "cell": "3d7e67ba-d068-45e9-8c2b-4ab2d378d51f",
@@ -475,8 +402,8 @@
             },
             "vertices": [
               {
-                "x": 670,
-                "y": 230
+                "x": 660,
+                "y": 260
               }
             ]
           },
@@ -516,34 +443,28 @@
             "labels": [
               "Read/Write Data"
             ],
-            "id": "bea9f69e-268f-46f0-8eda-db84ddcb0bda",
+            "id": "e5485206-1522-4d7e-b12a-aacc8017b753",
             "source": {
-              "cell": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
-              "port": "e0cb3b8d-11e1-4860-b8ab-f3bb38e161e3"
+              "x": 1000,
+              "y": 90
             },
             "target": {
-              "cell": "00546be2-6996-443e-a12a-bc73651be39c",
-              "port": "0bc6f358-baa1-42b9-9b63-eba609bff66b"
-            },
-            "vertices": [
-              {
-                "x": 1130,
-                "y": 140
-              }
-            ]
+              "x": 1280,
+              "y": 90
+            }
           },
           {
             "position": {
-              "x": 1290,
-              "y": 210
+              "x": 832,
+              "y": 59.99999999999997
             },
             "size": {
-              "width": 230,
-              "height": 100
+              "width": 130,
+              "height": 70
             },
             "attrs": {
               "text": {
-                "text": "MongoDB"
+                "text": "Node.js Backend"
               },
               "body": {
                 "stroke": "#333333",
@@ -635,11 +556,128 @@
                 }
               ]
             },
-            "id": "00546be2-6996-443e-a12a-bc73651be39c",
+            "id": "f39ce26c-8ff5-4490-83b8-3161a18c22f6",
             "zIndex": 11,
             "data": {
               "type": "tm.Actor",
-              "name": "MongoDB",
+              "name": "Node.js Backend",
+              "description": "Handles user authentication, API requests, message processing, group chats and Socket.IO communication.",
+              "isTrustBoundary": false,
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "providesAuthentication": false,
+              "threats": []
+            }
+          },
+          {
+            "position": {
+              "x": 1311,
+              "y": 60
+            },
+            "size": {
+              "width": 160,
+              "height": 90
+            },
+            "attrs": {
+              "text": {
+                "text": "Mongo DB"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "actor",
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "db6d8022-965c-4f27-b34a-a83919dfcf0b"
+                },
+                {
+                  "group": "right",
+                  "id": "1835f09e-01d8-4628-90ae-88ce8e40d2dd"
+                },
+                {
+                  "group": "bottom",
+                  "id": "a38e4d25-fd8e-4e2a-82ac-8757a2e3b325"
+                },
+                {
+                  "group": "left",
+                  "id": "0bc6f358-baa1-42b9-9b63-eba609bff66b"
+                }
+              ]
+            },
+            "id": "2a9efe62-9110-485d-a62c-8ca1c0b3d27b",
+            "zIndex": 12,
+            "data": {
+              "type": "tm.Actor",
+              "name": "Mongo DB",
               "description": "Stores user accounts, chat information and messages.",
               "isTrustBoundary": false,
               "outOfScope": false,
@@ -666,63 +704,11 @@
             },
             "width": 200,
             "height": 100,
-            "zIndex": 12,
-            "connector": "smooth",
-            "data": {
-              "type": "tm.Flow",
-              "name": "Data Flow",
-              "description": "",
-              "outOfScope": false,
-              "isTrustBoundary": false,
-              "reasonOutOfScope": "",
-              "hasOpenThreats": false,
-              "isBidirectional": false,
-              "isEncrypted": false,
-              "isPublicNetwork": false,
-              "protocol": "",
-              "threats": [],
-              "trustBoundaryIds": []
-            },
-            "labels": [
-              "Data Flow"
-            ],
-            "id": "04034127-3d29-4687-9c1e-799748c33327",
-            "source": {
-              "x": 1290,
-              "y": 260
-            },
-            "target": {
-              "cell": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
-              "port": "3a27d22b-26c4-47fb-8121-bd0928a38fae"
-            },
-            "vertices": [
-              {
-                "x": 1070,
-                "y": 260
-              }
-            ]
-          },
-          {
-            "shape": "flow",
-            "attrs": {
-              "line": {
-                "stroke": "#333333",
-                "targetMarker": {
-                  "name": "block"
-                },
-                "sourceMarker": {
-                  "name": ""
-                },
-                "strokeDasharray": null
-              }
-            },
-            "width": 200,
-            "height": 100,
             "zIndex": 13,
             "connector": "smooth",
             "data": {
               "type": "tm.Flow",
-              "name": "\tAPI Requests",
+              "name": "\tRetrieved Data",
               "description": "",
               "outOfScope": false,
               "isTrustBoundary": false,
@@ -736,107 +722,27 @@
               "trustBoundaryIds": []
             },
             "labels": [
-              "\tAPI Requests"
+              "\tRetrieved Data"
             ],
-            "id": "f77388cc-3c0a-4ab2-8904-61d84aabe96c",
+            "id": "d0de7631-4107-4099-969b-06abc8289d33",
             "source": {
-              "cell": "3d7e67ba-d068-45e9-8c2b-4ab2d378d51f",
-              "port": "e0cb3b8d-11e1-4860-b8ab-f3bb38e161e3"
+              "x": 1380,
+              "y": 160
             },
             "target": {
-              "cell": "a7589648-6438-4d6d-a5e7-d142ec59cf8b",
-              "port": "47832d77-2fd3-4b65-919a-4d2f6935b4ff"
+              "x": 990,
+              "y": 160
             },
-            "tools": {
-              "items": [
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead",
-                "boundary",
-                "button-remove",
-                "vertices",
-                "source-arrowhead",
-                "target-arrowhead"
-              ],
-              "name": null
-            }
+            "vertices": [
+              {
+                "x": 1160,
+                "y": 300
+              },
+              {
+                "x": 1050,
+                "y": 250
+              }
+            ]
           }
         ]
       }
